@@ -237,7 +237,7 @@ body {
                                 <ul class="list-disc space-y-2">
                                     <% directories[dir].files.forEach(file => { %>
                                         <li class="cursor-pointer text-blue-500 hover:underline"
-                                            onclick="fetchFileContent('<%= file.path %>','<%= file.download_url %>')">
+                                            onclick="fetchFileContent('<%= file.path %>','<%= file.download_url %>','<%= repoName %>')">
                                             <%= file.name %>
                                         </li>
                                     <% }) %>
@@ -282,7 +282,7 @@ body {
             }
         }
 
-        async function fetchFileContent(filePath, download_url) {
+        async function fetchFileContent(filePath, download_url,repoName) {
             const fileType = getFileType(filePath);
             const contentDisplay = document.getElementById('content-display');
             contentDisplay.innerHTML = ''; // Clear previous content
@@ -292,7 +292,7 @@ body {
             } else if (fileType === 'video') {
                 contentDisplay.innerHTML = `<video controls class="max-w-full h-auto rounded"><source src="${content}" type="video/mp4">Your browser does not support the video tag.</video>`;
             } else {
-                const response = await fetch(`/lab/content/${filePath}`);
+                const response = await fetch(`/lab//content/${repoName}/${filePath}`);
                 if (response.ok) {
                     const content = await response.text();
                     contentDisplay.textContent = content; // Display unsupported file type as text

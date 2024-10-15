@@ -61,8 +61,9 @@ const { fetchAllFiles, fetchFileContent } = require('../utilities/githubApi');
 
 // Controller to handle fetching all files from the repository
 async function getAllFiles(req, res) {
+    const repoName = req.params.repoName;
     try {
-        const allFiles = await fetchAllFiles();
+        const allFiles = await fetchAllFiles(repoName);
 
         // Initialize an object to hold directories
         const directories = {};
@@ -85,7 +86,7 @@ async function getAllFiles(req, res) {
         });
         
         // Render the labs.ejs view with directories data
-        res.render('labs', { directories });
+        res.render('labs', { directories,repoName });
     } catch (error) {
         console.error('Error fetching files:', error);
         res.status(500).json({ message: 'Error fetching files' });
@@ -94,11 +95,13 @@ async function getAllFiles(req, res) {
 
 // Function to get the content of a specific file
 async function getFileContent(req, res) {
-    const filePath = req.params[0];  // Get the captured path from the wildcard
+    // Extract the repository name and file path from the URL params
+    const repoName = req.params.repoName;  // First part after `/content/`
+    const filePath = req.params[0];  // Second part is the file path
 
     try {
         // Fetch the content of the specific file
-        const content = await fetchFileContent(filePath.trim()); // Ensure any leading/trailing spaces are removed
+        const content = await fetchFileContent(repoName, filePath.trim()); // Ensure any leading/trailing spaces are removed
 
         // Send the file content as a response
         res.send(content);
@@ -109,3 +112,5 @@ async function getFileContent(req, res) {
 }
 
 module.exports = { getAllFiles, getFileContent };
+
+

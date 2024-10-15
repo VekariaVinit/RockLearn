@@ -11,13 +11,15 @@ async function getRepoList(req, res) {
     const response = await axios.get(`https://api.github.com/users/${GITHUB_USERNAME}/repos`);
     const repositories = response.data;
 
-    // Render the EJS template and pass repositories data
-    res.render('home', { repositories, GITHUB_USERNAME });
+    // Extract only the repository names
+    const repoNames = repositories.map(repo => repo.name);
+
+    // Render the EJS template and pass repository names and GitHub username
+    res.render('home', { repoNames, GITHUB_USERNAME });
   } catch (error) {
     console.error('Error fetching repositories:', error);
     res.status(500).send('An error occurred while fetching repositories.');
   }
-};
-
+}
 
 module.exports = { getRepoList };
