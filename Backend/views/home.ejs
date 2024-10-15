@@ -7,70 +7,73 @@
     <link rel="stylesheet" href="/styles.css">
     <style>
         /* TailwindCSS-inspired custom styles */
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f4f4;
-}
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
 
-.header {
-    background-color: #1e40af; /* Blue header */
-    color: white;
-    padding: 16px;
-    text-align: center;
-}
+        .header {
+            background-color: #1e40af; /* Blue header */
+            color: white;
+            padding: 16px;
+            text-align: center;
+        }
 
-.container {
-    display: flex;
-    max-width: 1200px;
-    margin: 0 auto;
-}
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-.sidebar {
-    background-color: #f8fafc; /* Light grey background */
-    padding: 16px;
-    width: 200px;
-    height: 100vh;
-    border-right: 1px solid #e2e8f0;
-}
+        .sidebar {
+            background-color: #f8fafc; /* Light grey background */
+            padding: 16px;
+            width: 200px;
+            height: 100vh;
+            border-right: 1px solid #e2e8f0;
+        }
 
-.content-area {
-    background-color: #fff;
-    padding: 16px;
-    width: calc(100% - 200px);
-}
+        .content-area {
+            background-color: #fff;
+            padding: 16px;
+            width: calc(100% - 200px);
+        }
 
-.repo-list {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-}
+        .repo-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
 
-.repo-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
+        .repo-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s; /* Animation effect on hover */
+            cursor: pointer; /* Indicate that it's clickable */
+        }
 
-.repo-card h2 {
-    font-size: 1.25rem;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
+        .repo-card:hover {
+            transform: scale(1.05); /* Scale effect on hover */
+        }
 
-.repo-card p {
-    font-size: 0.875rem;
-    color: #6b7280;
-}
+        .repo-card h2 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2563eb; /* Change text color for repo title */
+        }
 
-.repo-card a {
-    color: #2563eb;
-    text-decoration: none;
-}
+        .repo-card p {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
 
-.repo-card a:hover {
-    text-decoration: underline;
-}
+        .repo-card span {
+            color: #2563eb; /* Change text color for GitHub link */
+        }
 
     </style>
 </head>
@@ -93,13 +96,11 @@ body {
         <div class="content-area w-5/6 p-4">
             <h1 class="text-3xl font-bold mb-4">Repositories</h1>
             <div class="repo-list grid grid-cols-3 gap-4">
-                <% repositories.forEach(repo => { %>
-                    <div class="repo-card bg-white shadow-md rounded-md p-4">
-                        <h2 class="text-xl font-bold mb-2"><%= repo.name %></h2>
+                <% repoNames.forEach(repo => { %>
+                    <div class="repo-card" onclick="location.href='/lab/<%= repo %>'">
+                        <h2 class="text-xl font-bold mb-2"><%= repo %></h2>
                         <p class="text-gray-600 mb-4"><%= repo.description || 'No description provided' %></p>
-                        <a href="<%= repo.html_url %>" target="_blank" class="text-blue-600 hover:underline">
-                            View on GitHub
-                        </a>
+                        <span>View on GitHub</span>
                     </div>
                 <% }) %>
             </div>

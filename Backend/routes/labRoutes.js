@@ -3,10 +3,11 @@ const { getAllFiles, getFileContent } = require('../controllers/labController');
 
 const router = express.Router();
 
-// Route to fetch all files in the repository (recursive)
-router.get('/all', getAllFiles);
+
+// Change this route to accept any repository name
+router.get('/:repoName', getAllFiles);
 
 // Route to fetch and display specific file content
-router.get('/content/*', getFileContent);
+router.get('/content/:repoName/*', getFileContent);
 
 module.exports = router;
