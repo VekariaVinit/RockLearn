@@ -168,7 +168,7 @@
                                 <ul class="list-disc pl-4">
                                     <% directories[dir].files.forEach(file=> { %>
                                         <li class="cursor-pointer text-blue-500 hover:underline"
-                                            onclick="fetchFileContent('<%= file.path %>')">
+                                            onclick="fetchFileContent('<%= file.path %>','<%= file.download_url%>')">
                                             <%= file.name %>
                                         </li>
                                         <% }); %>
@@ -211,29 +211,28 @@
             }
         }
 
-        async function fetchFileContent(filePath) {
-            const response = await fetch(`/lab/content/${filePath}`);
-            if (response.ok) {
-                const content = await response.text();
-                const fileType = getFileType(filePath);
-                document.getElementById('file-content').style.display = 'block'; // Show the content area
-
-                // Clear previous content
-                const contentDisplay = document.getElementById('content-display');
-                contentDisplay.innerHTML = ''; // Clear previous content
-
-                if (fileType === 'text') {
-                    contentDisplay.textContent = content; // Display text content
-                } else if (fileType === 'image') {
-                    contentDisplay.innerHTML = `<img src="${content}" alt="Image" class="max-w-full h-auto rounded" />`;
-                } else if (fileType === 'video') {
-                    contentDisplay.innerHTML = `<video controls class="max-w-full h-auto rounded"><source src="${content}" type="video/mp4">Your browser does not support the video tag.</video>`;
-                } else {
+        async function fetchFileContent(filePath, download_url) {
+            const fileType = getFileType(filePath);
+            const contentDisplay = document.getElementById('content-display');
+            contentDisplay.innerHTML = ''; // Clear previous content
+            document.getElementById('file-content').style.display = 'block'; // Show the content area
+            if (fileType === 'image') {
+                contentDisplay.innerHTML = `<img src="${download_url}" alt="Image" class="max-w-full h-auto rounded" />`;
+            } else if (fileType === 'video') {
+                contentDisplay.innerHTML = `<video controls class="max-w-full h-auto rounded"><source src="${content}" type="video/mp4">Your browser does not support the video tag.</video>`;
+            } else {
+                const response = await fetch(`/lab/content/${filePath}`);
+                if (response.ok) {
+                    const content = await response.text();
                     contentDisplay.textContent = content; // Display unsupported file type as text
                 }
-            } else {
+             else {
                 document.getElementById('content-display').textContent = 'Error fetching file content';
             }
+            // Clear previous content
+            
+        }
+    
         }
 
         function getFileType(filePath) {

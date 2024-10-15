@@ -5,6 +5,8 @@ require("dotenv").config(); // Ensure environment variables are loaded
 // MongoDB connection function
 const connectDB = () => {
   const db_link = process.env.DB_LINK;
+  console.log("Mongo URI:", process.env.DB_LINK);
+
   mongoose
     .connect(db_link, {
       useNewUrlParser: true,
