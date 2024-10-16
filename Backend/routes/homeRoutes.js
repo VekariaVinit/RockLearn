@@ -1,9 +1,13 @@
 const express = require('express');
-const { getRepoList } = require('../controllers/homepageController');
-
 const router = express.Router();
+const { getRepoList, createLab } = require('../controllers/homepageController');
+const multer = require('multer'); // Handle file uploads
 
-// Route to fetch all repository (recursive)
+const upload = multer({ dest: 'uploads/' });
+
 router.get('/', getRepoList);
+
+// POST route for creating a lab
+router.post('/create-lab', upload.array('folder'), createLab);
 
 module.exports = router;

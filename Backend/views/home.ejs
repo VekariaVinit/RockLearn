@@ -75,6 +75,21 @@
             color: #2563eb; /* Change text color for GitHub link */
         }
 
+        /* Styles for Create Lab button and modal */
+        .create-lab-btn {
+            background-color: #1e40af;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .create-lab-btn:hover {
+            background-color: #1d4ed8;
+        }
+
     </style>
 </head>
 <body>
@@ -85,7 +100,7 @@
     </header>
 
     <div class="container flex mt-4">
-        <!-- Sidebar (for any future navigation options, e.g. home) -->
+        <!-- Sidebar -->
         <div class="sidebar w-1/6 bg-gray-100 p-4">
             <ul class="space-y-4">
                 <li class="cursor-pointer text-blue-600 font-bold hover:text-blue-800">Home</li>
@@ -95,6 +110,24 @@
         <!-- Main Content Area -->
         <div class="content-area w-5/6 p-4">
             <h1 class="text-3xl font-bold mb-4">Repositories</h1>
+
+            <!-- Create Lab Button -->
+            <button class="create-lab-btn" onclick="document.getElementById('create-lab-form').style.display='block'">Create Lab</button>
+
+            <!-- Create Lab Modal -->
+            <div id="create-lab-form" style="display:none;">
+                <form action="/home/create-lab" method="POST" enctype="multipart/form-data">
+                    <label for="labName">Lab (Repository) Name:</label>
+                    <input type="text" id="labName" name="labName" required><br><br>
+
+                    <label for="folder">Select Folder to Upload:</label>
+                    <input type="file" id="folder" name="folder" webkitdirectory directory multiple required><br><br>
+
+                    <button type="submit">Create Lab</button>
+                </form>
+            </div>
+
+            <!-- Repositories List -->
             <div class="repo-list grid grid-cols-3 gap-4">
                 <% repoNames.forEach(repo => { %>
                     <div class="repo-card" onclick="location.href='/lab/<%= repo %>'">
