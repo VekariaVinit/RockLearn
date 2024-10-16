@@ -1,7 +1,9 @@
 const axios = require('axios');
-require("dotenv").config();
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
 
-// Replace 'your-github-username' with the actual username
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_USERNAME = process.env.GITHUB_UNAME;
 
 // Route to fetch repositories and render the homepage
@@ -22,4 +24,56 @@ async function getRepoList(req, res) {
   }
 }
 
-module.exports = { getRepoList };
+// Route to create a new repository
+async function createLab(req, res) {
+  const { labName } = req.body;
+  const folderPath = req.files.folder;
+
+  try {
+    // Create a new repository on GitHub
+    const repoResponse = await axios.post(
+      `https://api.github.com/user/repos`,
+      {
+        name: labName,
+        private: false, // Set to 'true' if you want the repo to be private
+      },
+      {
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      }
+    );
+
+    // Upload the folder structure to GitHub repository
+    const uploadFolder = async (folder, repoName, pathPrefix = '') => {
+      console.log(folder);
+      for (let file of folder) {
+        const filePath = path.join(__dirname, file.name);
+        const content = fs.readFileSync(filePath, 'base64'); // Read the file content
+
+        await axios.put(
+          `https://api.github.com/repos/${GITHUB_USERNAME}/${repoName}/contents/${pathPrefix}${file.name}`,
+          {
+            message: `add ${file.name}`,
+            content: content,
+          },
+          {
+            headers: {
+              Authorization: `token ${GITHUB_TOKEN}`,
+            },
+          }
+        );
+      }
+    };
+
+    await uploadFolder(folderPath, labName);
+
+    res.redirect('/');
+  } catch (error) {
+    console.error('Error creating repository:', error);
+    res.status(500).send('An error occurred while creating the repository.');
+  }
+}
+
+module.exports = { getRepoList, createLab };
