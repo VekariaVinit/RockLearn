@@ -14,6 +14,8 @@ const userRoutes = require("./routes/userRoutes");
 const passwordRoutes = require("./routes/passwordRoutes");
 const labRoutes = require("./routes/labRoutes")
 const homeRoutes = require("./routes/homeRoutes")
+const uploadRoutes = require("./routes/uploadRoutes")
+const bodyParser = require('body-parser');
 
 const corsOptions = {
   origin: process.env.CLIENT_LINK,
@@ -36,9 +38,20 @@ http.createServer(app).listen(PORT, () => {
   console.log("Listening on port `" + PORT + "`");
 });
 
+// Middleware to parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Middleware to parse application/json
+app.use(bodyParser.json());
+
 app.get("/", (req, res) => {
   res.redirect("/home");
 });
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
+
+// Use the upload route
+// app.use('/', uploadRoute);
 
 // Use the routes
 app.use("/auth", authRoutes);
@@ -46,4 +59,5 @@ app.use("/user", userRoutes);
 app.use("/password", passwordRoutes);
 app.use("/lab", labRoutes);
 app.use("/home", homeRoutes);
+app.use("/upload", uploadRoutes);
 
