@@ -30,7 +30,7 @@ app.use(cors(corsOptions));
 app.use(morgan("dev"));
 app.use(express.json());
 
-mongo()
+// mongo()
 
 const PORT = process.env.PORT || 3001;
 

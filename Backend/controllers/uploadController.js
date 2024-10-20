@@ -39,7 +39,6 @@ const createGithubRepo = async (repoName) => {
     return response.data;
 };
 
-// /controllers/labController.js
 const uploadLab = async (req, res) => {
     const { labName, branch } = req.body;
     const labPath = path.join(__dirname, '..', 'uploads', labName); // Adjust to ensure it's pointing to the right directory
@@ -118,12 +117,17 @@ const uploadLab = async (req, res) => {
             console.error('Error pushing to remote:', error.message);
         }
 
-        res.status(201).json({ message: 'Lab created and files uploaded successfully!' });
+        // Remove the temp folder after upload
+        fs.rmSync(labPath, { recursive: true, force: true });
+        console.log(`Temporary lab folder removed: ${labPath}`);
+
+        res.status(201).json({ message: 'Lab created, files uploaded, and temp folder removed successfully!' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error creating lab: ' + error.message });
     }
 };
+
 
 
 
