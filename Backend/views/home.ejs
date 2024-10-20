@@ -112,10 +112,10 @@
             <h1 class="text-3xl font-bold mb-4">Repositories</h1>
 
             <!-- Create Lab Button -->
-            <button class="create-lab-btn" onclick="document.getElementById('create-lab-form').style.display='block'">Create Lab</button>
+            <button class="create-lab-btn" onclick="window.location.href='/upload'">Create Lab</button>
 
             <!-- Create Lab Modal -->
-            <div id="create-lab-form" style="display:none;">
+            <!-- <div id="create-lab-form" style="display:none;">
                 <form action="/home/create-lab" method="POST" enctype="multipart/form-data">
                     <label for="labName">Lab (Repository) Name:</label>
                     <input type="text" id="labName" name="labName" required><br><br>
@@ -125,7 +125,7 @@
 
                     <button type="submit">Create Lab</button>
                 </form>
-            </div>
+            </div> -->
 
             <!-- Repositories List -->
             <div class="repo-list grid grid-cols-3 gap-4">

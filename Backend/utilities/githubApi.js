@@ -37,7 +37,7 @@
     // Function to fetch the content of a specific file
     async function fetchFileContent( repoName,filePath) {
         // Construct the URL using the passed repoName
-        const url = `https://raw.githubusercontent.com/Dhaval2908/${repoName}/main/${filePath}`;
+        const url = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${repoName}/main/${filePath}`;
 
         try {
             const response = await fetch(url);
