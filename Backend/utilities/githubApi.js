@@ -1,7 +1,7 @@
     const fetch = require('node-fetch');
 
     require("dotenv").config();
-    const GITHUB_USERNAME = process.env.GITHUB_USERNAME;
+    const GITHUB_USERNAME = process.env.GITHUB_UNAME;
 
     // Recursive function to fetch all files in a directory and its subdirectories
     async function fetchAllFiles(repoName, dirPath = '') {
