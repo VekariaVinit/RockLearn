@@ -17,20 +17,24 @@ const homeRoutes = require("./routes/homeRoutes")
 const uploadRoutes = require("./routes/uploadRoutes")
 const bodyParser = require('body-parser');
 
-const corsOptions = {
-  origin: process.env.CLIENT_LINK,
-  credentials: true,
-};
+// const corsOptions = {
+//   origin: process.env.CLIENT_LINK,
+//   credentials: true,
+// };
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views')); // Ensure this path is correct
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 app.use(morgan("dev"));
 app.use(express.json());
-
-// mongo()
+app.use(cors({
+  origin: process.env.CLIENT_LINK,
+  methods: 'GET,POST,PUT,DELETE', // Add other methods if needed
+  credentials: true // Allow credentials if required
+}));
+mongo()
 
 const PORT = process.env.PORT || 3001;
 
