@@ -1,6 +1,0 @@
-/* Header.css */
-header {
-    position: sticky; /* Make header sticky */
-    top: 0; /* Stick to the top */
-    z-index: 10; /* Ensure it stays above other elements */
-}
