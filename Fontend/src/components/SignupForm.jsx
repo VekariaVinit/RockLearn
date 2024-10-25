@@ -60,25 +60,18 @@ const SignupForm = () => {
     const handleOtpSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true); // Start loading
-
-        // Prepare OTP verification data
-        const otpData = {
-            email,
-            fullHash,
-            otp,
-        };
-
+      
         try {
-            // Call the context function to verify OTP with additional parameters
-            await verifyOTP(otpData);
-            navigate('/auth/login');
+          // Pass email, fullHash, and otp as an object
+          await verifyOTP({ email, fullHash, otp });
+          navigate('/auth/login');
         } catch (error) {
-            setErrorMessage("OTP verification failed."); // Handle OTP error
+          setErrorMessage("OTP verification failed."); // Handle OTP error
         } finally {
-            setIsLoading(false); // End loading
+          setIsLoading(false); // End loading
         }
-    };
-
+      };
+      
     return (
         <div className="flex flex-col items-center justify-center bg-white rounded-xl border-2 border-red-500 p-8 w-96">
             <h1 className="text-5xl font-bold">
