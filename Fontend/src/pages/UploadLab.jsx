@@ -19,9 +19,15 @@ const UploadLabPage = () => {
     const [isLoading, setIsLoading] = useState(false); // State for loading
 
     const handleFileChange = (event) => {
-        setFiles(event.target.files);
+        const selectedFiles = event.target.files;
+        const filesWithPath = Array.from(selectedFiles).map(file => {
+            // You might need a way to capture relative paths, e.g., `file.webkitRelativePath`.
+            const filePath = file.webkitRelativePath || file.name;
+            return { file, filePath };
+        });
+        setFiles(filesWithPath);
     };
-
+    
     const handleSubmit = async (event) => {
         event.preventDefault();
         setIsLoading(true); // Start loading
@@ -29,8 +35,9 @@ const UploadLabPage = () => {
         const formData = new FormData();
         formData.append('labName', labName);
         formData.append('branch', branch);
-        Array.from(files).forEach(file => {
+        files.forEach(({ file, filePath }) => {
             formData.append('files', file);
+            formData.append('filePaths[]', filePath); // Send paths separately
         });
 
         try {
