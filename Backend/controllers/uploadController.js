@@ -40,24 +40,39 @@ const createGithubRepo = async (repoName) => {
 };
 
 const uploadLab = async (req, res) => {
-    const { labName, branch } = req.body;
+    const { labName, branch, filePaths } = req.body;
     const labPath = path.join(__dirname, '..', 'uploads', labName); // Adjust to ensure it's pointing to the right directory
 
     try {
+        // Print the received file paths to the console
+        console.log('Original received file paths:', filePaths);
+
+        // Remove the first part of the file path before the first "/"
+        const modifiedFilePaths = filePaths.map(filePath => {
+            const firstSlashIndex = filePath.indexOf('/');
+            return firstSlashIndex !== -1 ? filePath.slice(firstSlashIndex + 1) : filePath;
+        });
+
+        console.log('Modified file paths:', modifiedFilePaths);
+
         // Create the lab directory
         fs.mkdirSync(labPath, { recursive: true });
 
-        // Move uploaded files into the lab directory
-        req.files.forEach(file => {
-            const tempPath = file.path;
-            const targetPath = path.join(labPath, file.originalname);
-            fs.renameSync(tempPath, targetPath); // Move the file
-            console.log(`Moved file: ${tempPath} to ${targetPath}`); // Log file movement
+        // Process and move files
+        req.files.forEach((file, index) => {
+            // Use the modified paths
+            const relativePath = modifiedFilePaths[index];
+            console.log(`Processing file ${index + 1} with path: ${relativePath}`);
+
+            const targetPath = path.join(labPath, relativePath);
+            fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+            fs.renameSync(file.path, targetPath);
+            console.log(`Moved file to: ${targetPath}`);
         });
 
         // Initialize Git in the lab directory
-        const git = simpleGit(labPath); // Ensure git is initialized in the lab path
-        const initOutput = await git.init(); // Initialize git repository
+        const git = simpleGit(labPath);
+        const initOutput = await git.init();
         console.log('Git init output:', initOutput);
 
         const remoteUrl = `https://${config.githubUsername}:${config.githubToken}@github.com/${config.githubUsername}/${labName}.git`;
@@ -73,11 +88,11 @@ const uploadLab = async (req, res) => {
             }
         }
 
-        // Add files to staging
-        for (const file of req.files) {
-            const targetPath = path.join(labPath, file.originalname);
-            await git.add(targetPath);
-            console.log(`Added file to staging: ${targetPath}`);
+        // Add files to staging using modified paths
+        for (const modifiedPath of modifiedFilePaths) {
+            const fullPath = path.join(labPath, modifiedPath);
+            await git.add(fullPath);
+            console.log(`Added file to staging: ${fullPath}`);
         }
 
         // Make an initial commit
@@ -86,11 +101,9 @@ const uploadLab = async (req, res) => {
 
         // Check for existing remotes
         const remotes = await git.getRemotes();
-
-        // Add the remote only if it doesn't already exist
         if (!remotes.some(remote => remote.name === 'origin')) {
             await git.addRemote('origin', remoteUrl);
-            console.log(`Added remote: ${remoteUrl}`); // Log remote addition
+            console.log(`Added remote: ${remoteUrl}`);
         }
 
         // Check if the branch exists
@@ -100,13 +113,11 @@ const uploadLab = async (req, res) => {
         });
 
         if (!branchExists) {
-            // Create and switch to the new branch if it doesn't exist
             await git.checkoutLocalBranch(branchName);
-            console.log(`Created and checked out branch: ${branchName}`); // Log branch creation
+            console.log(`Created and checked out branch: ${branchName}`);
         } else {
-            // Checkout the existing branch
             await git.checkout(branchName);
-            console.log(`Checked out existing branch: ${branchName}`); // Log branch checkout
+            console.log(`Checked out existing branch: ${branchName}`);
         }
 
         // Push to the specified branch
@@ -115,18 +126,20 @@ const uploadLab = async (req, res) => {
             console.log('Push output:', pushOutput);
         } catch (error) {
             console.error('Error pushing to remote:', error.message);
+            console.error('Full error details:', error);
         }
 
-        // Remove the temp folder after upload
+        // Optional: Remove the temp folder after upload
         fs.rmSync(labPath, { recursive: true, force: true });
         console.log(`Temporary lab folder removed: ${labPath}`);
 
-        res.status(201).json({ message: 'Lab created, files uploaded, and temp folder removed successfully!' });
+        res.status(201).json({ message: 'Files uploaded successfully with structure maintained.' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error creating lab: ' + error.message });
     }
 };
+
 
 
 
