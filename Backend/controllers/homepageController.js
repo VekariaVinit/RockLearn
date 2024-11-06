@@ -6,13 +6,32 @@ require('dotenv').config();
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_USERNAME = process.env.GITHUB_UNAME;
 
-// Function to save metadata to a JSON file
-const saveMetadata = (metadata) => {
+const saveMetadata = (newMetadata) => {
   const metadataPath = path.join(__dirname, 'metadata.json');
-  if (!fs.existsSync(metadataPath)) {
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+  
+  // Check if metadata.json exists
+  let existingMetadata = [];
+
+  if (fs.existsSync(metadataPath)) {
+    // If it exists, read the current content of the file
+    existingMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+  }
+
+  // Check if the new metadata already exists based on the URL (or title)
+  const isDuplicate = existingMetadata.some(
+    (existing) => existing.url === newMetadata.url || existing.title === newMetadata.title
+  );
+
+  if (!isDuplicate) {
+    // Append new metadata to the existing data if not a duplicate
+    existingMetadata.push(newMetadata);
+
+    // Save the updated metadata back to the file
+    fs.writeFileSync(metadataPath, JSON.stringify(existingMetadata, null, 2));
   }
 };
+
+
 
 // Function to get the headers with the authentication token
 const getAuthHeaders = () => ({
@@ -94,4 +113,4 @@ async function createLab(req, res) {
   }
 }
 
-module.exports = { getRepoList, createLab };
+module.exports = { getRepoList, createLab ,saveMetadata};

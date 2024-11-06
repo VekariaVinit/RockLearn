@@ -17,7 +17,7 @@ header {
   
   /* Logo color */
   header h1 span:first-child {
-    color: #F87171; /* Red-100 */
+    color: #ffffff; /* Red-100 */
   }
   
   header h1 span:last-child {
