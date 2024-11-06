@@ -15,7 +15,9 @@ const passwordRoutes = require("./routes/passwordRoutes");
 const labRoutes = require("./routes/labRoutes")
 const homeRoutes = require("./routes/homeRoutes")
 const uploadRoutes = require("./routes/uploadRoutes")
+const searchRoutes = require('./routes/searchroutes');
 const bodyParser = require('body-parser');
+
 
 // const corsOptions = {
 //   origin: process.env.CLIENT_LINK,
@@ -64,4 +66,6 @@ app.use("/password", passwordRoutes);
 app.use("/lab", labRoutes);
 app.use("/home", homeRoutes);
 app.use("/upload", uploadRoutes);
+app.use('/api', searchRoutes);
+
 

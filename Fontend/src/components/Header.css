@@ -1,6 +1,98 @@
-/* Header.css */
+/* Header container with a red gradient background */
 header {
-    position: sticky; /* Make header sticky */
-    top: 0; /* Stick to the top */
-    z-index: 10; /* Ensure it stays above other elements */
-}
+    padding: 1rem 2rem;
+    background: linear-gradient(90deg, #ef5d5d, #F43F5E); /* Gradient from red-100 to dark red */
+    color: white; /* Ensuring text is white */
+  }
+  
+  /* Logo styling */
+  header h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8); /* Text shadow for better readability */
+    transition: all 0.3s ease;
+  }
+  
+  /* Logo color */
+  header h1 span:first-child {
+    color: #F87171; /* Red-100 */
+  }
+  
+  header h1 span:last-child {
+    color: #000000; /* Black */
+  }
+  
+  /* Navigation container for right-side alignment */
+  nav {
+    flex-shrink: 0; /* Prevent shrinking */
+    display: flex;
+    justify-content: flex-end; /* Align nav items to the right */
+  }
+  
+  /* Navigation links styling */
+  nav ul {
+    display: flex;
+    gap: 1.5rem; /* Adjusted spacing between navigation items */
+  }
+  
+  /* Link style */
+  .nav-link {
+    font-size: 1.125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    color: white; /* Text color white for links */
+    padding: 0.5rem 1rem;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+  }
+  
+  /* Hover effect with color shift, scaling, and shadow */
+  .nav-link:hover {
+    color: #1c0000; /* Red-100 on hover */
+    background-color: rgba(255, 255, 255, 0.2); /* Subtle white background on hover */
+    transform: scale(1.1);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); /* Shadow effect on hover */
+    transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  /* Active button effect */
+  .nav-link:active {
+    transform: scale(0.98);
+  }
+  
+  /* Icon hover effect */
+  .icon {
+    margin-right: 10px;
+    transition: transform 0.3s ease, color 0.3s ease;
+  }
+  
+  .nav-link:hover .icon {
+    transform: rotate(360deg); /* Icon rotates on hover */
+    color: #1c0000; /* Red-100 on icon hover */
+  }
+  
+  /* Responsive design adjustments */
+  @media (max-width: 768px) {
+    header {
+      padding: 1rem;
+    }
+  
+    h1 {
+      font-size: 2.2rem;
+    }
+  
+    nav ul {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  
+    nav ul li {
+      text-align: center;
+    }
+  }
+  
