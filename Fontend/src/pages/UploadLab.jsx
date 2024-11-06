@@ -14,8 +14,9 @@ const Spinner = () => (
 const UploadLabPage = () => {
     const navigate = useNavigate(); // Initialize navigate for navigation
     const [labName, setLabName] = useState('');
-    const [branch, setBranch] = useState('');
     const [files, setFiles] = useState([]);
+    const [tags, setTags] = useState([]); // State for tags
+    const [tagInput, setTagInput] = useState(''); // Add state for tag input
     const [isLoading, setIsLoading] = useState(false); // State for loading
 
     const handleFileChange = (event) => {
@@ -27,46 +28,83 @@ const UploadLabPage = () => {
         });
         setFiles(filesWithPath);
     };
+
+    const handleTagInput = (event) => {
+        if (event.key === 'Enter' && tagInput.trim() !== '') {
+            event.preventDefault();
+            setTags(prevTags => [...prevTags, tagInput.trim()]);
+            setTagInput(''); // Clear the tag input after adding
+        }
+    }
+
+    const removeTag = (indexToRemove) => {
+        setTags(tags.filter((_, index) => index !== indexToRemove));
+    };
     
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setIsLoading(true); // Start loading
-
+        setIsLoading(true);
+    
+        // Initialize FormData and append the fields
         const formData = new FormData();
-        formData.append('labName', labName);
-        formData.append('branch', branch);
+        formData.append('labName', labName); // Add lab name
+        formData.append('tags', JSON.stringify(tags)); // Convert tags to JSON string
+    
+        // Add each file to formData, including its path if needed
         files.forEach(({ file, filePath }) => {
-            formData.append('files', file);
-            formData.append('filePaths[]', filePath); // Send paths separately
+            formData.append('files', file);       // Append each file object
+            formData.append('filePaths[]', filePath);
         });
+    
 
+        // Log to debug formData content
+        // formData.forEach((value, key) => {
+        //     console.log(`${key}: ${value}`);
+        // });
+        
         try {
             const response = await fetch('http://localhost:3001/upload/api/labs', {
                 method: 'POST',
-                body: formData,
+                body: formData, // Pass the FormData directly
             });
-
+    
             if (response.ok) {
-                toast.success('Lab uploaded successfully!'); // Show success toast
-                // Reset form after submission
+                toast.success('Lab uploaded successfully!');
                 setLabName('');
-                setBranch('');
+                setTags([]);
                 setFiles([]);
             } else {
-                toast.error('Failed to upload lab. Please try again.'); // Show error toast
+                toast.error('Failed to upload lab. Please try again.');
             }
         } catch (error) {
             console.error('Error uploading lab:', error);
-            toast.error('An error occurred while uploading the lab. Please try again.'); // Show error toast
+            toast.error('An error occurred while uploading the lab. Please try again.');
         } finally {
-            setIsLoading(false); // Stop loading
-            // Redirect to home after a short delay
+            setIsLoading(false);
             setTimeout(() => {
-                navigate('/home'); // Navigate to home page
+                navigate('/home');
             }, 2000);
         }
     };
-
+    
+    const handleLabNameChange = (e) => {
+        // Get the value from the input
+        const value = e.target.value;
+    
+        // Check if the value contains any spaces
+        if (!value.includes(' ')) {
+          // If there are no spaces, update the state
+          setLabName(value);
+        } else {
+          // If there are spaces, remove them (or you could show a warning instead)
+          // Uncomment the next line to automatically remove spaces
+          // setLabName(value.replace(/\s+/g, ''));
+    
+          // You could also show a warning if needed:
+          alert("Lab name cannot contain spaces.");
+        }
+      };
+      
     return (
         <div className="bg-gray-100 min-h-screen">
             <Header />
@@ -79,7 +117,7 @@ const UploadLabPage = () => {
                             type="text"
                             id="labName"
                             value={labName}
-                            onChange={(e) => setLabName(e.target.value)}
+                            onChange={handleLabNameChange}
                             placeholder="Enter Lab Name"
                             required
                             className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -99,16 +137,30 @@ const UploadLabPage = () => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="branch" className="block text-gray-700">Branch Name:</label>
+                        <label htmlFor="tags" className="block text-gray-700">Tags:</label>
                         <input
                             type="text"
-                            id="branch"
-                            value={branch}
-                            onChange={(e) => setBranch(e.target.value)}
-                            placeholder="Enter Branch Name"
-                            required
+                            id="tags"
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={handleTagInput}
+                            placeholder="Enter tags and press Enter"
                             className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                         />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {tags.map((tag, index) => (
+                                <span key={index} className="flex items-center bg-gray-200 text-gray-700 px-2 py-1 rounded-md">
+                                    {tag}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTag(index)}
+                                        className="ml-2 text-red-500 hover:text-red-700 focus:outline-none"
+                                    >
+                                        &times;
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
                     </div>
                     <button type="submit" className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200 w-full" disabled={isLoading}>
                         {isLoading ? 'Uploading...' : 'Upload Lab'}

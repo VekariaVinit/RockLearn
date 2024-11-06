@@ -87,33 +87,41 @@ const HomePage = () => {
 
                 {/* Search Box UI */}
                 <div className="mb-4 flex justify-center relative">
-                    <input
-                        type="text"
-                        placeholder="Search repositories..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border p-3 rounded-lg shadow-lg w-1/2 text-black focus:outline-none focus:ring-2 focus:ring-red-500"
-                        aria-label="Search repositories"
-                    />
-                    {searchQuery && suggestions.length > 0 && (
-                        <div className="absolute top-12 w-1/2 bg-white shadow-lg max-h-60 overflow-auto z-10 border border-gray-300 rounded-lg">
-                            {suggestions.map((suggestion, index) => (
-                                <div
-                                    key={index}
-                                    className="p-3 cursor-pointer hover:bg-gray-200"
-                                    onClick={() => {
-                                        setSearchQuery(suggestion.title || '');
-                                        setSuggestions([]);
-                                    }}
-                                >
-                                    <Link to={`/lab/${suggestion.title}`} className="block text-red-500 hover:text-red-600">
-                                        {suggestion.title || 'No title'}
-                                    </Link>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+    <input
+        type="text"
+        placeholder="Search repositories..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="border p-3 rounded-lg shadow-lg w-1/2 text-black focus:outline-none focus:ring-2 focus:ring-red-500"
+        aria-label="Search repositories"
+    />
+    {searchQuery && suggestions.length > 0 && (
+        <div className="absolute top-12 w-1/2 bg-white shadow-lg max-h-60 overflow-auto z-10 border border-gray-300 rounded-lg">
+            {suggestions.map((suggestion, index) => (
+                <div
+                    key={index}
+                    className="p-3 cursor-pointer hover:bg-gray-200"
+                    onClick={() => {
+                        setSearchQuery(suggestion.title || suggestion.tags.join(', ') || '');
+                        setSuggestions([]);  // Clear suggestions on selection
+                    }}
+                >
+                    <Link to={`/lab/${suggestion.title}`} className="block text-red-500 hover:text-red-600">
+                        {/* Display title */}
+                        <div>{suggestion.title || 'No title'}</div>
+
+                        {/* Display tags if they exist */}
+                        {suggestion.tags && suggestion.tags.length > 0 && (
+                            <div className="text-sm text-gray-600 mt-1">
+                                Tags: {suggestion.tags.join(', ')}
+                            </div>
+                        )}
+                    </Link>
                 </div>
+            ))}
+        </div>
+    )}
+</div>
 
                 {error && <div className="text-red-500 text-center mb-4">{error}</div>}
                 {loading && <div className="text-center">Loading...</div>}

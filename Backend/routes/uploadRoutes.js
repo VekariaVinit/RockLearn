@@ -12,11 +12,13 @@ router.post('/api/labs', (req, res, next) => {
             return res.status(500).json({ message: 'File upload failed', error: err.message });
         }
 
-        // Log selected files
-        console.log('Selected files:', req.files);
+        // Log labName, tags, and selected files
+        const labName = req.body.labName;
+        const tags = JSON.parse(req.body.tags || '[]');
+        const files = req.files;
 
-        // Call the uploadLab controller
-        uploadLab(req, res);
+        // Pass the data to the uploadLab controller
+        uploadLab(req, res, labName, tags, files);
     });
 });
 router.get('/',(req,res)=>{

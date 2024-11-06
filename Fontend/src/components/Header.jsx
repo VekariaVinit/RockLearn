@@ -5,13 +5,13 @@ import './Header.css';
 
 const Header = () => {
   return (
-    <header className="bg-gradient-to-r from-red-100 to-red-700 text-white p-4  transition-all duration-500">
+    <header className="bg-gradient-to-r from-red-500 to-red-700 text-white">
       {/* Container for the content inside the header */}
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         
         {/* Logo */}
         <h1 className="text-5xl font-extrabold tracking-wide text-shadow-md">
-          <span className="text-red-100">Rock</span>
+          <span className="text-white">Rock</span>
           <span className="text-black">Learn</span>
         </h1>
 
