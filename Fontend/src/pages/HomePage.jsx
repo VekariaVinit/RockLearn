@@ -1,86 +1,78 @@
-// import React, { useEffect, useState } from 'react';
-// import { Link } from 'react-router-dom';
-// import Header from '../components/Header'; // Import the Header component
-// import './home.css'; // Ensure you have the scrollbar hiding styles here
-
-// const HomePage = () => {
-//     const [repoNames, setRepoNames] = useState([]);
-
-//     useEffect(() => {
-//         const fetchData = async () => {
-//             try {
-//                 const response = await fetch('http://localhost:3001/home');
-//                 console.log("Response Status:", response.status);
-//                 const data = await response.json();
-//                 console.log("Fetched Data:", data);
-//                 setRepoNames(data.repoNames);
-//             } catch (error) {
-//                 console.error('Error fetching repositories:', error);
-//             }
-//         };
-
-//         fetchData();
-//     }, []);
-
-//     // Function to get the initials of a repo name
-//     const getInitials = (repoName) => {
-//         const words = repoName.split(' ');
-//         return words.length > 1
-//             ? words[0][0].toUpperCase() + words[1][0].toUpperCase()
-//             : repoName[0].toUpperCase(); // Single-word repo names
-//     };
-
-//     return (
-//         <div className="bg-gray-100 min-h-screen overflow-auto"> {/* Allow scrolling */}
-//             <Header /> {/* Use the Header component */}
-//             <div className="content-area w-5/6 p-4 mx-auto">
-//                 <h1 className="text-4xl font-bold mb-8 text-center">Repositories</h1>
-//                 <div className="repo-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-//                     {repoNames.map((repo) => (
-//                         <div
-//                             key={repo}
-//                             className="repo-card flex flex-col items-center border border-gray-300 rounded-lg p-4 bg-white shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer transform hover:scale-105"
-//                         >
-//                             <Link to={`/lab/${repo}`} className="w-full text-center"> {/* Link to LabDetails page */}
-//                                 {/* Check if the image URL is provided, otherwise show initials */}
-//                                 <div className="w-32 h-32 mb-2 flex justify-center items-center rounded-full border-2 border-red-500 bg-red-500 text-white text-3xl font-bold">
-//                                     {getInitials(repo)} {/* Show initials if no image */}
-//                                 </div>
-//                                 <h2 className="text-xl font-bold mb-1 text-red-500">{repo}</h2>
-//                                 <p className="text-gray-600">View on GitHub</p>
-//                             </Link>
-//                         </div>
-//                     ))}
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default HomePage;
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import './home.css';
+import { FaGithub, FaDownload } from 'react-icons/fa'; // Import icons from react-icons
 
 const HomePage = () => {
     const [repoNames, setRepoNames] = useState([]);
+    const [repoDetails, setRepoDetails] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+
+    const fetchAllRepos = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await fetch('http://localhost:3001/home');
+            const data = await response.json();
+
+            if (data && Array.isArray(data.repoNames) && Array.isArray(data.metadata)) {
+                setRepoNames(data.repoNames);
+                setRepoDetails(data.metadata);
+            } else {
+                setError('Invalid data format from server');
+            }
+        } catch (error) {
+            setError('Error fetching repositories');
+            console.error('Error fetching repositories:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchData = async (query) => {
+        if (query.trim() === '') {
+            fetchAllRepos();
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        try {
+            const response = await fetch(`http://localhost:3001/api/metadata/search?q=${query}`);
+            const data = await response.json();
+
+            if (data && Array.isArray(data)) {
+                setRepoNames(data.map(item => item.title || ''));
+                setSuggestions(data);
+            } else {
+                setRepoNames([]);
+                setSuggestions([]);
+            }
+        } catch (error) {
+            setError('Error fetching repositories');
+            console.error('Error fetching repositories:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await fetch('http://localhost:3001/home');
-                const data = await response.json();
-                setRepoNames(data.repoNames);
-            } catch (error) {
-                console.error('Error fetching repositories:', error);
-            }
-        };
-        fetchData();
-    }, []);
+        if (searchQuery.trim() === '') {
+            fetchAllRepos();
+        } else {
+            fetchData(searchQuery);
+        }
+    }, [searchQuery]);
 
     const getInitials = (repoName) => {
+        if (typeof repoName !== 'string' || repoName.trim() === '') {
+            return '';
+        }
+
         const words = repoName.split(' ');
         return words.length > 1
             ? words[0][0].toUpperCase() + words[1][0].toUpperCase()
@@ -88,32 +80,87 @@ const HomePage = () => {
     };
 
     return (
-        <div className="bg-gray-100 min-h-screen overflow-auto">
+        <div className="min-h-screen text-white">
             <Header />
-            <div className="content-area w-5/6 p-4 mx-auto">
-                <h1 className="text-4xl font-bold mb-8 text-center">Repositories</h1>
-                <div className="repo-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                    {repoNames.map((repo) => (
-                        <div
-                            key={repo}
-                            className="repo-card flex flex-col items-center border border-gray-300 rounded-lg p-4 bg-white shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer transform hover:scale-105"
-                        >
-                            <Link to={`/lab/${repo}`} className="w-full text-center">
-                                <div className="w-32 h-32 mb-2 flex justify-center items-center rounded-full border-2 border-red-500 bg-red-500 text-white text-3xl font-bold">
-                                    {getInitials(repo)}
+            <div className="content-area w-5/6 p-6 mx-auto">
+                <h1 className="text-5xl font-bold mb-8 text-center text-red-500">Repositories</h1>
+
+                {/* Search Box UI */}
+                <div className="mb-4 flex justify-center relative">
+                    <input
+                        type="text"
+                        placeholder="Search repositories..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border p-3 rounded-lg shadow-lg w-1/2 text-black focus:outline-none focus:ring-2 focus:ring-red-500"
+                        aria-label="Search repositories"
+                    />
+                    {searchQuery && suggestions.length > 0 && (
+                        <div className="absolute top-12 w-1/2 bg-white shadow-lg max-h-60 overflow-auto z-10 border border-gray-300 rounded-lg">
+                            {suggestions.map((suggestion, index) => (
+                                <div
+                                    key={index}
+                                    className="p-3 cursor-pointer hover:bg-gray-200"
+                                    onClick={() => {
+                                        setSearchQuery(suggestion.title || '');
+                                        setSuggestions([]);
+                                    }}
+                                >
+                                    <Link to={`/lab/${suggestion.title}`} className="block text-red-500 hover:text-red-600">
+                                        {suggestion.title || 'No title'}
+                                    </Link>
                                 </div>
-                                <h2 className="text-xl font-bold mb-1 text-red-500">{repo}</h2>
-                                <p className="text-gray-600">View on GitHub</p>
-                            </Link>
-                            <a
-                                href={`https://github.com/RockLearn/${repo}/archive/refs/heads/main.zip`}
-                                className="text-blue-500 hover:underline mt-2"
-                                download
-                            >
-                                Download Repo as ZIP
-                            </a>
+                            ))}
                         </div>
-                    ))}
+                    )}
+                </div>
+
+                {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+                {loading && <div className="text-center">Loading...</div>}
+                {repoNames.length === 0 && !loading && searchQuery.trim() !== '' && (
+                    <div className="text-center text-red-500">No repositories found</div>
+                )}
+
+                {/* Repositories List */}
+                <div className="repo-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
+                    {repoNames.length === 0 && !loading && searchQuery.trim() === '' ? (
+                        <div className="text-center">No repositories available</div>
+                    ) : (
+                        repoNames.map((repoName, index) => (
+                            <div
+                                key={repoName || index}
+                                className="repo-card p-6 bg-gray-50 text-white rounded-lg shadow-lg hover:shadow-2xl transform transition-transform hover:scale-105"
+                            >
+                                <Link to={`/lab/${repoName}`} className="block text-center">
+                                    <div className="w-32 h-32 mb-4 mx-auto flex justify-center items-center rounded-full bg-red-500 text-white text-3xl font-bold">
+                                        {getInitials(repoName)}
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-black">{repoName}</h3>
+                                </Link>
+
+                                {/* Action Buttons */}
+                                <div className="mt-4 flex justify-center space-x-6">
+                                    <a
+                                        href={`https://github.com/RockLearn/${repoName}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-black hover:text-red-500 relative group"
+                                    >
+                                        <FaGithub className="w-6 h-6" />
+                                        <span className="tooltip absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 text-xs p-2 bg-black text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">View on GitHub</span>
+                                    </a>
+                                    <a
+                                        href={`https://github.com/RockLearn/${repoName}/archive/refs/heads/main.zip`}
+                                        className="text-black hover:text-red-500 relative group"
+                                        download
+                                    >
+                                        <FaDownload className="w-6 h-6" />
+                                        <span className="tooltip absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 text-xs p-2 bg-black text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">Download ZIP</span>
+                                    </a>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>
