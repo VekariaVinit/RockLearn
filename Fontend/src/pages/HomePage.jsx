@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import './home.css';
-import { FaGithub, FaDownload } from 'react-icons/fa'; // Import icons from react-icons
+import { FaGithub, FaDownload } from 'react-icons/fa';
 
 const HomePage = () => {
     const [repoNames, setRepoNames] = useState([]);
@@ -87,41 +87,41 @@ const HomePage = () => {
 
                 {/* Search Box UI */}
                 <div className="mb-4 flex justify-center relative">
-    <input
-        type="text"
-        placeholder="Search repositories..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="border p-3 rounded-lg shadow-lg w-1/2 text-black focus:outline-none focus:ring-2 focus:ring-red-500"
-        aria-label="Search repositories"
-    />
-    {searchQuery && suggestions.length > 0 && (
-        <div className="absolute top-12 w-1/2 bg-white shadow-lg max-h-60 overflow-auto z-10 border border-gray-300 rounded-lg">
-            {suggestions.map((suggestion, index) => (
-                <div
-                    key={index}
-                    className="p-3 cursor-pointer hover:bg-gray-200"
-                    onClick={() => {
-                        setSearchQuery(suggestion.title || suggestion.tags.join(', ') || '');
-                        setSuggestions([]);  // Clear suggestions on selection
-                    }}
-                >
-                    <Link to={`/lab/${suggestion.title}`} className="block text-red-500 hover:text-red-600">
-                        {/* Display title */}
-                        <div>{suggestion.title || 'No title'}</div>
+                    <input
+                        type="text"
+                        placeholder="Search repositories..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border p-3 rounded-lg shadow-lg w-1/2 text-black focus:outline-none focus:ring-2 focus:ring-red-500"
+                        aria-label="Search repositories"
+                    />
+                    {searchQuery && suggestions.length > 0 && (
+                        <div className="absolute top-12 w-1/2 bg-white shadow-lg max-h-60 overflow-auto z-10 border border-gray-300 rounded-lg">
+                            {suggestions.map((suggestion, index) => (
+                                <div
+                                    key={index}
+                                    className="p-3 cursor-pointer hover:bg-gray-200"
+                                    onClick={() => {
+                                        setSearchQuery(suggestion.title || suggestion.tags.join(', ') || '');
+                                        setSuggestions([]);  // Clear suggestions on selection
+                                    }}
+                                >
+                                    <Link to={`/lab/${suggestion.title}`} className="block text-red-500 hover:text-red-600">
+                                        <div>{suggestion.title || 'No title'}</div>
+                                        {suggestion.tags && Array.isArray(suggestion.tags) && suggestion.tags.length > 0 ? (
+    <div className="text-sm text-gray-600 mt-1">
+        Tags: {suggestion.tags.join(', ')}
+    </div>
+) : (
+    <div className="text-sm text-gray-600 mt-1">No tags available</div>
+)}
 
-                        {/* Display tags if they exist */}
-                        {suggestion.tags && suggestion.tags.length > 0 && (
-                            <div className="text-sm text-gray-600 mt-1">
-                                Tags: {suggestion.tags.join(', ')}
-                            </div>
-                        )}
-                    </Link>
+                                    </Link>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            ))}
-        </div>
-    )}
-</div>
 
                 {error && <div className="text-red-500 text-center mb-4">{error}</div>}
                 {loading && <div className="text-center">Loading...</div>}
@@ -134,22 +134,34 @@ const HomePage = () => {
                     {repoNames.length === 0 && !loading && searchQuery.trim() === '' ? (
                         <div className="text-center">No repositories available</div>
                     ) : (
-                        repoNames.map((repoName, index) => (
+                        repoDetails.map((repo, index) => (
                             <div
-                                key={repoName || index}
+                                key={repo.title || index}
                                 className="repo-card p-6 bg-gray-50 text-white rounded-lg shadow-lg hover:shadow-2xl transform transition-transform hover:scale-105"
                             >
-                                <Link to={`/lab/${repoName}`} className="block text-center">
+                                <Link to={`/lab/${repo.title}`} className="block text-center">
                                     <div className="w-32 h-32 mb-4 mx-auto flex justify-center items-center rounded-full bg-red-500 text-white text-3xl font-bold">
-                                        {getInitials(repoName)}
+                                        {getInitials(repo.title)}
                                     </div>
-                                    <h3 className="text-xl font-semibold text-black">{repoName}</h3>
+                                    <h3 className="text-xl font-semibold text-black">{repo.title}</h3>
+                                    <p className="text-gray-500 mt-2">{repo.description}</p>
+
+                                    {/* Display tags if they exist and are an array */}
+{Array.isArray(repo.tags) && repo.tags.length > 0 ? (
+    <div className="text-sm text-gray-600 mt-1">
+        Tags: {repo.tags.join(', ')}
+    </div>
+) : (
+    <div className="text-sm text-gray-600 mt-1">
+        {typeof repo.tags === 'string' ? `Tags: ${repo.tags}` : 'No tags available'}
+    </div>
+)}
+
                                 </Link>
 
-                                {/* Action Buttons */}
                                 <div className="mt-4 flex justify-center space-x-6">
                                     <a
-                                        href={`https://github.com/RockLearn/${repoName}`}
+                                        href={repo.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-black hover:text-red-500 relative group"
@@ -158,7 +170,7 @@ const HomePage = () => {
                                         <span className="tooltip absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 text-xs p-2 bg-black text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">View on GitHub</span>
                                     </a>
                                     <a
-                                        href={`https://github.com/RockLearn/${repoName}/archive/refs/heads/main.zip`}
+                                        href={`${repo.url}/archive/refs/heads/main.zip`}
                                         className="text-black hover:text-red-500 relative group"
                                         download
                                     >
