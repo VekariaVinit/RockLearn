@@ -109,12 +109,12 @@ const HomePage = () => {
                                     <Link to={`/lab/${suggestion.title}`} className="block text-red-500 hover:text-red-600">
                                         <div>{suggestion.title || 'No title'}</div>
                                         {suggestion.tags && Array.isArray(suggestion.tags) && suggestion.tags.length > 0 ? (
-    <div className="text-sm text-gray-600 mt-1">
-        Tags: {suggestion.tags.join(', ')}
-    </div>
-) : (
-    <div className="text-sm text-gray-600 mt-1">No tags available</div>
-)}
+                                            <div className="text-sm text-gray-600 mt-1">
+                                                Tags: {suggestion.tags.join(', ')}
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-gray-600 mt-1">No tags available</div>
+                                        )}
 
                                     </Link>
                                 </div>
@@ -144,18 +144,18 @@ const HomePage = () => {
                                         {getInitials(repo.title)}
                                     </div>
                                     <h3 className="text-xl font-semibold text-black">{repo.title}</h3>
-                                    <p className="text-gray-500 mt-2">{repo.description}</p>
+                                    {/*<p className="text-gray-500 mt-2">{repo.description}</p>}
 
                                     {/* Display tags if they exist and are an array */}
-{Array.isArray(repo.tags) && repo.tags.length > 0 ? (
-    <div className="text-sm text-gray-600 mt-1">
-        Tags: {repo.tags.join(', ')}
-    </div>
-) : (
-    <div className="text-sm text-gray-600 mt-1">
-        {typeof repo.tags === 'string' ? `Tags: ${repo.tags}` : 'No tags available'}
-    </div>
-)}
+                                    {Array.isArray(repo.tags) && repo.tags.length > 0 ? (
+                                        <div className="text-sm text-gray-600 mt-1">
+                                            Tags: {repo.tags.join(', ')}
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-gray-600 mt-1">
+                                            {typeof repo.tags === 'string' ? `Tags: ${repo.tags}` : 'No tags available'}
+                                        </div>
+                                    )}
 
                                 </Link>
 

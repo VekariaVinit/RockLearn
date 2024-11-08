@@ -1,54 +1,56 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 require('dotenv').config();
+const Metadata = require('../models/Metadata'); // Adjust the path to your Metadata model
+
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_USERNAME = process.env.GITHUB_UNAME;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// Helper function to read existing metadata from metadata.json
-const readMetadata = () => {
-  const metadataPath = path.join(__dirname, 'metadata.json');
-  if (fs.existsSync(metadataPath)) {
-    return JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-  }
-  return [];
-};
 
-// Modified saveMetadata function
-const saveMetadata = (newMetadata) => {
-  const metadataPath = path.join(__dirname, 'metadata.json');
-  let existingMetadata = readMetadata();
-
-  // Check if the metadata entry with the same title or URL exists
-  let isUpdated = false;
-  existingMetadata = existingMetadata.map((existing) => {
-    if (existing.url === newMetadata.url || existing.title === newMetadata.title) {
-      const hasChanges = Object.keys(newMetadata).some(
-        key => existing[key] !== newMetadata[key]
-      );
-
-      if (hasChanges) {
-        isUpdated = true;
-        return { ...existing, ...newMetadata };
-      }
-      return existing;
-    }
-    return existing;
-  });
-
-  if (!isUpdated) {
-    existingMetadata.push(newMetadata);
-  }
-
-  fs.writeFileSync(metadataPath, JSON.stringify(existingMetadata, null, 2));
-};
-
-// Function to get the headers with the authentication token
+// Function to get headers with the authentication token
 const getAuthHeaders = () => ({
   Authorization: `token ${GITHUB_TOKEN}`,
   Accept: 'application/vnd.github.v3+json',
 });
+
+// Function to save metadata to MongoDB
+const saveMetadata = async (newMetadata) => {
+  // Ensure newMetadata is always an array
+  newMetadata = Array.isArray(newMetadata) ? newMetadata : [newMetadata];
+  
+  console.log('New Metadata:', newMetadata);
+  try {
+    for (let data of newMetadata) {
+      // Normalize tags field to ensure it's always an array
+      if (typeof data.tags === 'string') {
+        data.tags = data.tags === 'No tags available' ? [] : data.tags.split(',').map(tag => tag.trim());
+      }
+
+      // Find existing document by title or URL and update if it exists
+      const existing = await Metadata.findOneAndUpdate(
+        { $or: [{ url: data.url }, { title: data.title }] },
+        { $set: data },
+        { new: true, upsert: true }
+      );
+
+      // If no existing document was updated, insert the new one
+      if (!existing) {
+        const metadata = new Metadata(data);
+        await metadata.save();
+      }
+    }
+    console.log('Metadata saved to MongoDB');
+  } catch (error) {
+    console.error('Error saving metadata to MongoDB:', error);
+  }
+};
+
+
+
 
 // Route to fetch repositories and send JSON response
 async function getRepoList(req, res) {
@@ -57,13 +59,14 @@ async function getRepoList(req, res) {
       headers: getAuthHeaders(),
     });
     const repositories = response.data;
-    const metadata = readMetadata(); // Read metadata for tag lookup
+
+    // Fetch metadata from MongoDB for tag lookup
+    const metadataEntries = await Metadata.find();
 
     // Extract repository names, URLs, and descriptions, adding tags if available
     const repoData = repositories.map(repo => {
-      // Find matching metadata by title
-      const metadataEntry = metadata.find(m => m.title === repo.name);
-      const tags = metadataEntry && metadataEntry.tags ? metadataEntry.tags : 'No tags available';
+      const metadataEntry = metadataEntries.find(m => m.title === repo.name);
+      const tags = metadataEntry ? metadataEntry.tags : 'No tags available';
 
       return {
         title: repo.name,
@@ -73,8 +76,8 @@ async function getRepoList(req, res) {
       };
     });
 
-    // Save metadata to a JSON file
-    saveMetadata(repoData);
+    // Save metadata to MongoDB
+    await saveMetadata(repoData);
 
     // Send JSON response with repository names and metadata
     res.json({ repoNames: repositories.map(repo => repo.name), metadata: repoData });
@@ -92,13 +95,8 @@ async function createLab(req, res) {
   try {
     const repoResponse = await axios.post(
       `https://api.github.com/user/repos`,
-      {
-        name: labName,
-        private: false,
-      },
-      {
-        headers: getAuthHeaders(),
-      }
+      { name: labName, private: false },
+      { headers: getAuthHeaders() }
     );
 
     const uploadFolder = async (folder, repoName, pathPrefix = '') => {
@@ -108,13 +106,8 @@ async function createLab(req, res) {
 
         await axios.put(
           `https://api.github.com/repos/${GITHUB_USERNAME}/${repoName}/contents/${pathPrefix}${file.name}`,
-          {
-            message: `add ${file.name}`,
-            content: content,
-          },
-          {
-            headers: getAuthHeaders(),
-          }
+          { message: `add ${file.name}`, content: content },
+          { headers: getAuthHeaders() }
         );
       }
     };
