@@ -10,19 +10,22 @@ const {saveMetadata} = require('./homepageController');
 const git = simpleGit();
 require("dotenv").config();
 const github_username = process.env.GITHUB_USERNAME;
+// const multer = require('multer');
 
-// Set up multer storage
+// Setup storage for file uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, ''); // Leave it empty; we'll handle it after
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads/';
+        cb(null, uploadDir); // Ensure 'uploads' directory exists
     },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
 });
 
-// Initialize multer
-const upload = multer({ storage });
+// Initialize Multer with storage configuration
+const upload = multer({ storage: storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 // Create a GitHub repository
 const createGithubRepo = async (repoName) => {
@@ -42,42 +45,68 @@ const createGithubRepo = async (repoName) => {
     return response.data;
 };
 
+
+
 const uploadLab = async (req, res, labName, tags, files) => {
-    const {filePaths} = req.body;
-    const labPath = path.join(__dirname, '..', 'uploads', labName); // Adjust to ensure it's pointing to the right directory
-    
     const repoData = {
-        title: labName, // You can map labName as title
-        url: `https://github.com/${github_username}/${labName}`, // Construct the URL
-        description: 'No description available', // Assuming files might have a description field
-        tags: tags, // Attach the tags passed from the frontend
+        title: labName,
+        url: `https://github.com/${config.githubUsername}/${labName}`,
+        description: 'No description available',
+        tags: tags,
     };
-    
-    saveMetadata(repoData)
-    
-    try {       
 
-        // Remove the first part of the file path before the first "/"
-        const modifiedFilePaths = filePaths.map(filePath => {
-            const firstSlashIndex = filePath.indexOf('/');
-            return firstSlashIndex !== -1 ? filePath.slice(firstSlashIndex + 1) : filePath;
-        });
+    // Save metadata to the database
+    saveMetadata(repoData);
 
-        // Create the lab directory
-        fs.mkdirSync(labPath, { recursive: true });
+    try {
+        if (!labName || !files || files.length === 0) {
+            console.log('Missing labName or files');
+            return res.status(400).json({ message: 'Lab name or files missing' });
+        }
 
-        // Process and move files
-        req.files.forEach((file, index) => {
-            // Use the modified paths
-            const relativePath = modifiedFilePaths[index];
+        // Ensure the root lab directory exists
+        const labDir = path.join(__dirname, '..', 'uploads', labName);
+        if (!fs.existsSync(labDir)) {
+            fs.mkdirSync(labDir, { recursive: true });
+        }
 
-            const targetPath = path.join(labPath, relativePath);
-            fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-            fs.renameSync(file.path, targetPath);
+        // Initialize an array to collect all modified file paths
+        const modifiedPaths = [];
+
+        // Function to recursively handle folder structure and move files
+        const createDirectoryStructure = (filePath, file) => {
+            const dirs = filePath.split('/').slice(0, -1); // Remove the last element (file name)
+            let currentDir = labDir;
+
+            // Loop through each directory level, skipping the first directory
+            dirs.slice(1).forEach((dir) => {
+                currentDir = path.join(currentDir, dir);
+                if (!fs.existsSync(currentDir)) {
+                    fs.mkdirSync(currentDir, { recursive: true });
+                }
+            });
+
+            const destPath = path.join(currentDir, file.originalname);
+            if (fs.existsSync(destPath)) {
+                console.log(`File ${destPath} already exists.`);
+                return; // Skip renaming if the file exists
+            }
+
+            fs.renameSync(file.path, destPath);
+            console.log("destpath ::", destPath);
+
+            // Push the destination path to the modifiedPaths array
+            modifiedPaths.push(destPath);
+        };
+
+        // Move each uploaded file to its appropriate path
+        files.forEach((file, index) => {
+            const filePath = req.body.filePaths[index];
+            createDirectoryStructure(filePath, file);
         });
 
         // Initialize Git in the lab directory
-        const git = simpleGit(labPath);
+        const git = simpleGit(labDir);
         const initOutput = await git.init();
 
         const remoteUrl = `https://${config.githubUsername}:${config.githubToken}@github.com/${config.githubUsername}/${labName}.git`;
@@ -87,16 +116,15 @@ const uploadLab = async (req, res, labName, tags, files) => {
             await createGithubRepo(labName);
         } catch (error) {
             if (error.response && error.response.status === 422) {
-                // console.log('Repository already exists on GitHub.');
+                // Repository already exists, no need to create again
             } else {
                 throw error; // Rethrow if it's a different error
             }
         }
 
         // Add files to staging using modified paths
-        for (const modifiedPath of modifiedFilePaths) {
-            const fullPath = path.join(labPath, modifiedPath);
-            await git.add(fullPath);
+        for (const modifiedPath of modifiedPaths) {
+            await git.add(modifiedPath);
         }
 
         // Make an initial commit
@@ -129,22 +157,18 @@ const uploadLab = async (req, res, labName, tags, files) => {
         }
 
         // Optional: Remove the temp folder after upload
-        fs.rmSync(labPath, { recursive: true, force: true });
+        fs.rmSync(labDir, { recursive: true, force: true });
 
         res.status(201).json({ message: 'Files uploaded successfully with structure maintained.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error creating lab: ' + error.message });
+    } catch (err) {
+        console.error('Error in uploadLab:', err);
+        res.status(500).json({ message: 'Error during lab upload', error: err.message });
     }
 };
 
 
-
-
-
-
 // Expose the upload middleware and controller
-module.exports = { upload, uploadLab };
+module.exports = {upload, uploadLab };
 
 
 

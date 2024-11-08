@@ -6,32 +6,43 @@ require('dotenv').config();
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_USERNAME = process.env.GITHUB_UNAME;
 
-const saveMetadata = (newMetadata) => {
+// Helper function to read existing metadata from metadata.json
+const readMetadata = () => {
   const metadataPath = path.join(__dirname, 'metadata.json');
-  
-  // Check if metadata.json exists
-  let existingMetadata = [];
-
   if (fs.existsSync(metadataPath)) {
-    // If it exists, read the current content of the file
-    existingMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+    return JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
   }
-
-  // Check if the new metadata already exists based on the URL (or title)
-  const isDuplicate = existingMetadata.some(
-    (existing) => existing.url === newMetadata.url || existing.title === newMetadata.title
-  );
-
-  if (!isDuplicate) {
-    // Append new metadata to the existing data if not a duplicate
-    existingMetadata.push(newMetadata);
-
-    // Save the updated metadata back to the file
-    fs.writeFileSync(metadataPath, JSON.stringify(existingMetadata, null, 2));
-  }
+  return [];
 };
 
+// Modified saveMetadata function
+const saveMetadata = (newMetadata) => {
+  const metadataPath = path.join(__dirname, 'metadata.json');
+  let existingMetadata = readMetadata();
 
+  // Check if the metadata entry with the same title or URL exists
+  let isUpdated = false;
+  existingMetadata = existingMetadata.map((existing) => {
+    if (existing.url === newMetadata.url || existing.title === newMetadata.title) {
+      const hasChanges = Object.keys(newMetadata).some(
+        key => existing[key] !== newMetadata[key]
+      );
+
+      if (hasChanges) {
+        isUpdated = true;
+        return { ...existing, ...newMetadata };
+      }
+      return existing;
+    }
+    return existing;
+  });
+
+  if (!isUpdated) {
+    existingMetadata.push(newMetadata);
+  }
+
+  fs.writeFileSync(metadataPath, JSON.stringify(existingMetadata, null, 2));
+};
 
 // Function to get the headers with the authentication token
 const getAuthHeaders = () => ({
@@ -42,18 +53,25 @@ const getAuthHeaders = () => ({
 // Route to fetch repositories and send JSON response
 async function getRepoList(req, res) {
   try {
-    // Fetch repositories using GitHub API
     const response = await axios.get(`https://api.github.com/users/${GITHUB_USERNAME}/repos`, {
       headers: getAuthHeaders(),
     });
     const repositories = response.data;
+    const metadata = readMetadata(); // Read metadata for tag lookup
 
-    // Extract only the repository names and metadata (title, description, URL)
-    const repoData = repositories.map(repo => ({
-      title: repo.name,
-      url: repo.html_url,
-      description: repo.description || 'No description available',
-    }));
+    // Extract repository names, URLs, and descriptions, adding tags if available
+    const repoData = repositories.map(repo => {
+      // Find matching metadata by title
+      const metadataEntry = metadata.find(m => m.title === repo.name);
+      const tags = metadataEntry && metadataEntry.tags ? metadataEntry.tags : 'No tags available';
+
+      return {
+        title: repo.name,
+        url: repo.html_url,
+        description: repo.description || 'No description available',
+        tags: tags,
+      };
+    });
 
     // Save metadata to a JSON file
     saveMetadata(repoData);
@@ -72,23 +90,21 @@ async function createLab(req, res) {
   const folderPath = req.files.folder;
 
   try {
-    // Create a new repository on GitHub
     const repoResponse = await axios.post(
       `https://api.github.com/user/repos`,
       {
         name: labName,
-        private: false, // Set to 'true' if you want the repo to be private
+        private: false,
       },
       {
         headers: getAuthHeaders(),
       }
     );
 
-    // Upload the folder structure to GitHub repository
     const uploadFolder = async (folder, repoName, pathPrefix = '') => {
       for (let file of folder) {
         const filePath = path.join(__dirname, file.name);
-        const content = fs.readFileSync(filePath, 'base64'); // Read the file content
+        const content = fs.readFileSync(filePath, 'base64');
 
         await axios.put(
           `https://api.github.com/repos/${GITHUB_USERNAME}/${repoName}/contents/${pathPrefix}${file.name}`,
@@ -105,7 +121,6 @@ async function createLab(req, res) {
 
     await uploadFolder(folderPath, labName);
 
-    // Send success response with repository details
     res.json({ message: 'Repository created successfully', repoName: labName });
   } catch (error) {
     console.error('Error creating repository:', error);
@@ -113,4 +128,4 @@ async function createLab(req, res) {
   }
 }
 
-module.exports = { getRepoList, createLab ,saveMetadata};
+module.exports = { getRepoList, createLab, saveMetadata };
