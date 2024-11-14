@@ -17,13 +17,16 @@ const getAuthHeaders = () => ({
   Accept: 'application/vnd.github.v3+json',
 });
 
-// Function to save metadata to MongoDB
-const saveMetadata = async (newMetadata) => {
+// Function to save metadata to MongoDB and remove outdated entries
+const saveMetadata = async (newMetadata, isForFrontend = false) => {
   // Ensure newMetadata is always an array
   newMetadata = Array.isArray(newMetadata) ? newMetadata : [newMetadata];
-  
+
   console.log('New Metadata:', newMetadata);
   try {
+    // Keep track of URLs in the new metadata
+    const newUrls = newMetadata.map(data => data.url);
+
     for (let data of newMetadata) {
       // Normalize tags field to ensure it's always an array
       if (typeof data.tags === 'string') {
@@ -43,11 +46,19 @@ const saveMetadata = async (newMetadata) => {
         await metadata.save();
       }
     }
+
+    // Only remove outdated entries if the function is called for sending data to the frontend
+    if (isForFrontend) {
+      await Metadata.deleteMany({ url: { $nin: newUrls } });
+      console.log('Outdated entries removed from MongoDB');
+    }
+
     console.log('Metadata saved to MongoDB');
   } catch (error) {
     console.error('Error saving metadata to MongoDB:', error);
   }
 };
+
 
 
 
@@ -77,7 +88,7 @@ async function getRepoList(req, res) {
     });
 
     // Save metadata to MongoDB
-    await saveMetadata(repoData);
+    await saveMetadata(repoData,true);
 
     // Send JSON response with repository names and metadata
     res.json({ repoNames: repositories.map(repo => repo.name), metadata: repoData });
