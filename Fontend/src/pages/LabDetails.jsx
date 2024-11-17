@@ -15,6 +15,7 @@ const LabDetails = () => {
     const [fileType, setFileType] = useState('text');
     const [openDirectory, setOpenDirectory] = useState(null);
     const [fileName, setFileName] = useState(''); // Track file name for download
+    const [sidebarVisible, setSidebarVisible] = useState(true); // For sidebar toggling
 
     useEffect(() => {
         const fetchLabData = async () => {
@@ -133,11 +134,24 @@ const LabDetails = () => {
         }
     };
 
+    // Toggle sidebar visibility
+    const toggleSidebar = () => {
+        setSidebarVisible(!sidebarVisible); // Toggles between visible and hidden
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-100">
             <Header />
             <div className="flex flex-grow">
-                <div className="sidebar bg-white border-r p-4 shadow-lg w-64 flex-shrink-0 h-full overflow-y-auto">
+                <div 
+                    className={`sidebar bg-white border-r p-4 shadow-lg w-64 flex-shrink-0 h-full overflow-y-auto transition-all duration-300 ${sidebarVisible ? 'block' : 'hidden'} md:block`}
+                >
+                    <button
+                        onClick={toggleSidebar}
+                        className="text-xl text-gray-500 sm:hidden block mb-4"
+                    >
+                        Toggle Sidebar
+                    </button>
                     <h2 className="text-2xl font-semibold mb-4">Directories</h2>
                     {Object.keys(directories).map((dir) => (
                         <div key={dir} className="mb-4">
@@ -170,11 +184,19 @@ const LabDetails = () => {
                     ))}
                 </div>
                 <div className="content-area bg-white p-4 flex-grow shadow-lg rounded-md h-full overflow-auto">
+                    <div>
+                    <button
+                    onClick={toggleSidebar}
+                    className={`fixed bottom-4 right-4 bg-blue-500 text-white rounded-full p-2 md:hidden ${sidebarVisible ? 'hidden' : 'block'}`}
+                    >
+                    Show Sidebar
+                    </button>
+                    </div>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-2xl font-semibold">File Content</h2>
                         <button
                             onClick={handleDownload}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition w-full sm:w-auto"
                         >
                             Download File
                         </button>
