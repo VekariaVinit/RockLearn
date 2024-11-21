@@ -5,6 +5,7 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null); // Store user details
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -12,9 +13,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check authentication state from localStorage
-    const storedAuth = localStorage.getItem('TOKEN');
-    if (storedAuth) {
+    const token = localStorage.getItem('TOKEN');
+    const userDetails = localStorage.getItem('USER');
+    if (token && userDetails) {
       setIsAuthenticated(true);
+      setUser(JSON.parse(userDetails)); // Parse and set user details
     }
   }, []);
 
@@ -25,18 +28,20 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-  
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Login failed');
-  
-      // Save token in localStorage
+
+      // Save token and user details in localStorage
       localStorage.setItem('TOKEN', data.token);
-  
-      // Update authentication state
+      localStorage.setItem('USER', JSON.stringify(data.user));
+
+      // Update state
       setIsAuthenticated(true);
+      setUser(data.user);
       setError(null);
-  
-      // Redirect to dashboard after login
+
+      // Redirect to dashboard
       navigate('/home');
       return data;
     } catch (err) {
@@ -45,7 +50,6 @@ export const AuthProvider = ({ children }) => {
       throw err;
     }
   };
-  
 
   const verifyOTP = async ({ email, fullHash, otp }) => {
     try {
@@ -80,14 +84,16 @@ export const AuthProvider = ({ children }) => {
   
     // Reset state and redirect
     setIsAuthenticated(false);
-    localStorage.removeItem('TOKEN'); // Clear token from localStorage
+    setUser(null);
+    localStorage.removeItem('TOKEN');
+    localStorage.removeItem('USER');
     setError(null);
-    navigate('/auth/login'); // Redirect to login page
+    navigate('/auth/login');
   };
   
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, verifyOTP, logout, error }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, verifyOTP, logout, error,user }}>
       {children}
     </AuthContext.Provider>
   );

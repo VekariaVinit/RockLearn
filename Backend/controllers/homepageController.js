@@ -61,39 +61,32 @@ const saveMetadata = async (newMetadata, isForFrontend = false) => {
 
 
 
-
-
-
-
-
-
 async function getRepoList(req, res) {
   try {
-    // Extract user ID from request (assuming JWT-based auth)
-    const userId = req.user?.id; // Example: user ID extracted from middleware
-    
+    const userId = req.user?.id; // User ID from middleware (e.g., JWT)
     const response = await axios.get(`https://api.github.com/users/${GITHUB_USERNAME}/repos`, {
       headers: getAuthHeaders(),
     });
     const repositories = response.data;
 
-    // Fetch metadata from MongoDB for tag lookup
+    // Fetch metadata from MongoDB
     const metadataEntries = await Metadata.find();
 
-    const repoData = repositories.map(repo => {
-      const metadataEntry = metadataEntries.find(m => m.title === repo.name);
+    const repoData = repositories.map((repo) => {
+      const metadataEntry = metadataEntries.find((m) => m.title === repo.name);
 
       let tags = [];
       if (metadataEntry) {
-        tags = Array.isArray(metadataEntry.tags) && metadataEntry.tags.length > 0
-          ? metadataEntry.tags
-          : ['No tags available'];
+        tags =
+          Array.isArray(metadataEntry.tags) && metadataEntry.tags.length > 0
+            ? metadataEntry.tags
+            : ['No tags available'];
       } else {
         tags = ['No tags available'];
       }
 
       return {
-        _id: metadataEntry ? metadataEntry._id : null, // Include ObjectId if metadata exists
+        _id: metadataEntry ? metadataEntry._id : null, // Ensure _id is either null or valid
         title: repo.name,
         url: repo.html_url,
         description: repo.description || 'No description available',
@@ -101,23 +94,23 @@ async function getRepoList(req, res) {
         totalLikes: metadataEntry ? metadataEntry.totalLikes : 0,
         totalVisits: metadataEntry ? metadataEntry.totalVisits : 0,
         likedByUser: metadataEntry && userId && Array.isArray(metadataEntry.likedBy)
-        ? metadataEntry.likedBy.includes(userId)
-        : false,
-    
+          ? metadataEntry.likedBy.map(String).includes(userId.toString())
+          : false, // Ensure userId matches
       };
     });
 
-    // Save the metadata to MongoDB and clean up outdated entries
-    await saveMetadata(repoData, true);
+    // Filter out invalid repositories (missing _id)
+    const validRepos = repoData.filter((repo) => repo._id !== null);
 
-    // Send JSON response with repository names, metadata, and IDs
-    res.json({ repoNames: repositories.map(repo => repo.name), metadata: repoData });
+    // Save metadata and clean outdated entries
+    await saveMetadata(validRepos, true);
+
+    res.json({ repoNames: repositories.map((repo) => repo.name), metadata: validRepos });
   } catch (error) {
     console.error('Error fetching repositories:', error);
     res.status(500).json({ message: 'An error occurred while fetching repositories.', error: error.message });
   }
 }
-
 
 
 

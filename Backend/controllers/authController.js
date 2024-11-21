@@ -8,13 +8,13 @@ const { sendMail } = require("../utilities/mailSend");
 // Generate JWT with 1-minute expiration
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "1m", // Token expires in 1 minute
+    expiresIn: "10m", // Token expires in 1 minute
   });
 };
 // Set cookie to store the token
 const setTokenCookie = (res, token) => {
   res.cookie("TOKEN", token, {
-    expires: new Date(Date.now() + 60 * 1000), // Cookie expires in 1 minute
+    expires: new Date(Date.now() + 60 * 10000), // Cookie expires in 1 minute
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // Secure in production
     sameSite: "strict",
