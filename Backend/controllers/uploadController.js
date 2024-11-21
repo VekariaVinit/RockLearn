@@ -53,10 +53,14 @@ const uploadLab = async (req, res, labName, tags, files) => {
         url: `https://github.com/${config.githubUsername}/${labName}`,
         description: 'No description available',
         tags: tags,
-    };
-
-    // Save metadata to the database
-    saveMetadata(repoData);
+        totalLikes: 0,  // Default to 0
+        totalVisits: 0,  // Default to 0
+        likedBy: [],     // Default to an empty array
+        visitedBy: [],   // Default to an empty array
+      };
+    
+      // Save metadata to the database
+      saveMetadata(repoData);
 
     try {
         if (!labName || !files || files.length === 0) {

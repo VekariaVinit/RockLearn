@@ -7,6 +7,8 @@ import { marked } from 'marked';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from 'react-router-dom'; // Add this import for internal links
+import { useAuth } from '../context/AuthContext';
+
 
 const LabDetails = () => {
     const { repoName } = useParams();
@@ -16,11 +18,18 @@ const LabDetails = () => {
     const [openDirectory, setOpenDirectory] = useState(null);
     const [fileName, setFileName] = useState(''); // Track file name for download
     const [sidebarVisible, setSidebarVisible] = useState(true); // For sidebar toggling
-
+    const getToken = () => {
+        return localStorage.getItem('TOKEN');
+    };
     useEffect(() => {
         const fetchLabData = async () => {
             try {
-                const response = await fetch(`http://localhost:3001/lab/${repoName}`);
+                const token = getToken();
+                const response = await fetch(`http://localhost:3001/lab/${repoName}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
                 const data = await response.json();
                 console.log('Lab Data:', data);
                 setDirectories(data.directories);

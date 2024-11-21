@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState,useContext} from 'react';
 import { Link } from 'react-router-dom';
 import { FaHome, FaSignOutAlt, FaUpload, FaUser, FaBars, FaTimes } from 'react-icons/fa';
+import { AuthContext } from '../context/AuthContext'; // Import the useAuth hook
 import './Header.css';
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { logout } = useContext(AuthContext);// Use the logout function from context
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
+  };
+
+  const handleLogout = () => {
+    logout(); // Call logout when logout is clicked
   };
 
   return (
@@ -165,7 +171,7 @@ const Header = () => {
             <Link to="/profile">
               <FaUser /> Profile
             </Link>
-            <Link>
+            <Link onClick={handleLogout}>
               <FaSignOutAlt /> Logout
             </Link>
           </nav>
@@ -198,7 +204,7 @@ const Header = () => {
                 </Link>
               </li>
               <li>
-                <Link>
+                <Link onClick={handleLogout}>
                   <FaSignOutAlt /> Logout
                 </Link>
               </li>

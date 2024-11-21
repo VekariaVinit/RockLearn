@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -26,6 +27,14 @@ const userSchema = new mongoose.Schema(
       default: false,
       required: true,
     },
+    likedLabs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'metadatas',  // Reference to the Lab model
+    }],
+    visitedLabs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'metadatas',  // Reference to the Lab model
+    }],
   },
   { timestamps: true }
 );

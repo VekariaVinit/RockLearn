@@ -1,10 +1,9 @@
-const express = require("express");
+// routes/userRoutes.js
+const express = require('express');
+const { getUserProfile } = require('../controllers/userController');
+const { protect } = require('../middlewares/authMiddleware'); // Ensure user is authenticated
 const router = express.Router();
-const userController = require("../controllers/userController");
-const authMiddleware = require("../middlewares/authMiddleware");
 
-router.get("/details", authMiddleware.protect, userController.getUserDetails);
-router.put("/update", authMiddleware.protect, userController.updateUserProfile);
-router.delete("/delete", authMiddleware.protect, userController.deleteUserAccount);
+router.get('/profile', protect, getUserProfile);  // Use GET for fetching the user profile
 
 module.exports = router;

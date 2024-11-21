@@ -1,13 +1,38 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const metadataSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  url: { type: String, required: true },
-  description: { type: String, default: 'No description available' },
-  tags: { type: [String], default: [] },
-});
+const labMetadataSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+    },
+    tags: { type: [String], default: [] },
+    url: {
+      type: String,
+      required: true,
+    },
+    totalLikes: {
+      type: Number,
+      default: 0,
+    },
+    totalVisits: {
+      type: Number,
+      default: 0,
+    },
+    likedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',  // Reference to the User model
+    }],
+    visitedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',  // Reference to the User model
+    }],
+  },
+  { timestamps: true }
+);
 
-// Check if the model exists before creating it
-const Metadata = mongoose.models.Metadata || mongoose.model('Metadata', metadataSchema);
-
-module.exports = Metadata;
+const labMetadataModel = mongoose.model("metadatas", labMetadataSchema);
+module.exports = labMetadataModel;

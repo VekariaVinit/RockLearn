@@ -18,6 +18,8 @@ const UploadLabPage = () => {
     const [tagInput, setTagInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const token = localStorage.getItem('TOKEN'); // Get the JWT token from localStorage
+
     const handleFileChange = (event) => {
         const selectedFiles = event.target.files;
         const filesWithPath = Array.from(selectedFiles).map(file => {
@@ -53,8 +55,12 @@ const UploadLabPage = () => {
         });
 
         try {
+            // Add Authorization header with JWT token
             const response = await fetch('http://localhost:3001/upload/api/labs', {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
                 body: formData,
             });
 
@@ -156,4 +162,3 @@ const UploadLabPage = () => {
 };
 
 export default UploadLabPage;
-    

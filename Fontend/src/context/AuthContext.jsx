@@ -1,81 +1,93 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [error, setError] = useState(null); 
-  const navigate = useNavigate(); // Initialize navigate
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const BASE_URL = 'http://localhost:3001/auth';
 
   useEffect(() => {
-    // Retrieve auth status from localStorage on app load
-    const storedAuth = localStorage.getItem('isAuthenticated');
-    if (storedAuth === 'true') {
+    // Check authentication state from localStorage
+    const storedAuth = localStorage.getItem('TOKEN');
+    if (storedAuth) {
       setIsAuthenticated(true);
     }
   }, []);
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:3001/auth/login', {
+      const response = await fetch(`${BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
+  
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
+      if (!response.ok) throw new Error(data.message || 'Login failed');
+  
+      // Save token in localStorage
+      localStorage.setItem('TOKEN', data.token);
+  
+      // Update authentication state
       setIsAuthenticated(true);
-      localStorage.setItem('isAuthenticated', 'true'); // Persist login state
-      setError(null); 
+      setError(null);
+  
+      // Redirect to dashboard after login
+      navigate('/home');
       return data;
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message);
+      throw err;
     }
   };
+  
 
-  const verifyOTP = async ({ email, fullHash, otp }) => {   
+  const verifyOTP = async ({ email, fullHash, otp }) => {
     try {
-      const response = await fetch('http://localhost:3001/auth/verify', {
+      const response = await fetch(`${BASE_URL}/verify`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, fullHash, otp }),
       });
-  
+
       const data = await response.json();
-  
-      if (!response.ok) {
-        throw new Error(data.message || 'OTP verification failed');
-      }
-  
+      if (!response.ok) throw new Error(data.message || 'OTP verification failed');
+
+      localStorage.setItem('TOKEN', data.token); // Save token in localStorage
       setIsAuthenticated(true);
-      localStorage.setItem('isAuthenticated', 'true'); // Persist login state
-      setError(null); 
+      setError(null);
+      navigate('/home'); // Redirect to a secure route after verification
       return data;
-    } catch (error) {
-      console.error('OTP verification error:', error);
-      setError(error.message); 
-      throw error;
+    } catch (err) {
+      console.error('OTP verification error:', err);
+      setError(err.message);
+      throw err;
     }
   };
+
+  const logout = async () => {
+    try {
+      // Clear server-side session (optional)
+      await fetch(`${BASE_URL}/logout`, { method: 'POST', credentials: 'include' });
+    } catch (err) {
+      console.error('Error logging out:', err);
+    }
   
-  const logout = () => {
-    setIsAuthenticated(false); // Reset the authentication state
-    localStorage.removeItem('isAuthenticated'); // Clear from local storage
-    navigate('/auth/login'); // Redirect to login page after logout
+    // Reset state and redirect
+    setIsAuthenticated(false);
+    localStorage.removeItem('TOKEN'); // Clear token from localStorage
+    setError(null);
+    navigate('/auth/login'); // Redirect to login page
   };
+  
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, verifyOTP,logout, error }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, verifyOTP, logout, error }}>
       {children}
     </AuthContext.Provider>
   );

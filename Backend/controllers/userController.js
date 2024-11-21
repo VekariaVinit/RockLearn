@@ -1,65 +1,29 @@
-const userModel = require("../models/userModel");
+const User = require('../models/userModel');
+const Lab = require('../models/Metadata');
 
-// Get user details
-module.exports.getUserDetails = async (req, res) => {
-  try {
-    const user = await userModel.findById(req.user._id).select("-password");
-    if (!user) {
-      return res.status(400).json({
-        message: "User not found.",
-      });
+const getUserProfile = async (req, res) => {
+    try {
+        // Fetch the user by ID, and populate both likedLabs and visitedLabs with full lab details
+        const user = await User.findById(req.user.id)
+            .populate({
+                path: 'likedLabs',
+                select: 'title description totalLikes totalVisits tags', // Select fields you need from the lab model
+            })
+            .populate({
+                path: 'visitedLabs',
+                select: 'title description totalLikes totalVisits tags', // Select fields you need from the lab model
+            });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Send the user profile data, including detailed liked and visited labs
+        res.json({ success: true, user });
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
-    return res.status(200).json({
-      message: "User details fetched successfully.",
-      user,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      message: "Internal server error.",
-    });
-  }
 };
 
-// Update user profile
-module.exports.updateUserProfile = async (req, res) => {
-  const { name, email } = req.body;
-  try {
-    const user = await userModel.findOneAndUpdate(
-      { _id: req.user._id },
-      { name, email },
-      { new: true, runValidators: true }
-    ).select("-password");
-    if (!user) {
-      return res.status(400).json({
-        message: "User not found.",
-      });
-    }
-    return res.status(200).json({
-      message: "User profile updated successfully.",
-      user,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      message: "Internal server error.",
-    });
-  }
-};
-
-// Delete user account
-module.exports.deleteUserAccount = async (req, res) => {
-  try {
-    const user = await userModel.findByIdAndDelete(req.user._id);
-    if (!user) {
-      return res.status(400).json({
-        message: "User not found.",
-      });
-    }
-    return res.status(200).json({
-      message: "User account deleted successfully.",
-    });
-  } catch (err) {
-    return res.status(500).json({
-      message: "Internal server error.",
-    });
-  }
-};
+module.exports = { getUserProfile };

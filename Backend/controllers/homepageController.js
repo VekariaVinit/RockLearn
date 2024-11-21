@@ -19,16 +19,16 @@ const getAuthHeaders = () => ({
 
 // Function to save metadata to MongoDB and remove outdated entries
 const saveMetadata = async (newMetadata, isForFrontend = false) => {
-  // Ensure newMetadata is always an array
   newMetadata = Array.isArray(newMetadata) ? newMetadata : [newMetadata];
 
-  console.log('New Metadata:', newMetadata);
+  // console.log('New Metadata:', newMetadata);
+
   try {
     // Keep track of URLs in the new metadata
     const newUrls = newMetadata.map(data => data.url);
 
     for (let data of newMetadata) {
-      // Normalize tags field to ensure it's always an array
+      // Ensure tags is always an array, even if it is passed as a string
       if (typeof data.tags === 'string') {
         data.tags = data.tags === 'No tags available' ? [] : data.tags.split(',').map(tag => tag.trim());
       }
@@ -50,10 +50,10 @@ const saveMetadata = async (newMetadata, isForFrontend = false) => {
     // Only remove outdated entries if the function is called for sending data to the frontend
     if (isForFrontend) {
       await Metadata.deleteMany({ url: { $nin: newUrls } });
-      console.log('Outdated entries removed from MongoDB');
+      // console.log('Outdated entries removed from MongoDB');
     }
 
-    console.log('Metadata saved to MongoDB');
+    // console.log('Metadata saved to MongoDB');
   } catch (error) {
     console.error('Error saving metadata to MongoDB:', error);
   }
@@ -63,9 +63,15 @@ const saveMetadata = async (newMetadata, isForFrontend = false) => {
 
 
 
-// Route to fetch repositories and send JSON response
+
+
+
+
 async function getRepoList(req, res) {
   try {
+    // Extract user ID from request (assuming JWT-based auth)
+    const userId = req.user?.id; // Example: user ID extracted from middleware
+    
     const response = await axios.get(`https://api.github.com/users/${GITHUB_USERNAME}/repos`, {
       headers: getAuthHeaders(),
     });
@@ -74,29 +80,47 @@ async function getRepoList(req, res) {
     // Fetch metadata from MongoDB for tag lookup
     const metadataEntries = await Metadata.find();
 
-    // Extract repository names, URLs, and descriptions, adding tags if available
     const repoData = repositories.map(repo => {
       const metadataEntry = metadataEntries.find(m => m.title === repo.name);
-      const tags = metadataEntry ? metadataEntry.tags : 'No tags available';
+
+      let tags = [];
+      if (metadataEntry) {
+        tags = Array.isArray(metadataEntry.tags) && metadataEntry.tags.length > 0
+          ? metadataEntry.tags
+          : ['No tags available'];
+      } else {
+        tags = ['No tags available'];
+      }
 
       return {
+        _id: metadataEntry ? metadataEntry._id : null, // Include ObjectId if metadata exists
         title: repo.name,
         url: repo.html_url,
         description: repo.description || 'No description available',
-        tags: tags,
+        tags,
+        totalLikes: metadataEntry ? metadataEntry.totalLikes : 0,
+        totalVisits: metadataEntry ? metadataEntry.totalVisits : 0,
+        likedByUser: metadataEntry && userId && Array.isArray(metadataEntry.likedBy)
+        ? metadataEntry.likedBy.includes(userId)
+        : false,
+    
       };
     });
 
-    // Save metadata to MongoDB
-    await saveMetadata(repoData,true);
+    // Save the metadata to MongoDB and clean up outdated entries
+    await saveMetadata(repoData, true);
 
-    // Send JSON response with repository names and metadata
+    // Send JSON response with repository names, metadata, and IDs
     res.json({ repoNames: repositories.map(repo => repo.name), metadata: repoData });
   } catch (error) {
     console.error('Error fetching repositories:', error);
     res.status(500).json({ message: 'An error occurred while fetching repositories.', error: error.message });
   }
 }
+
+
+
+
 
 // Route to create a new repository and send JSON response
 async function createLab(req, res) {

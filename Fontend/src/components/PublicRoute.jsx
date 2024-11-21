@@ -1,12 +1,16 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
 const PublicRoute = () => {
-  const { isAuthenticated } = useAuth();
+  const token = localStorage.getItem('TOKEN');
 
-  // Redirect to home if already authenticated
-  return isAuthenticated ? <Navigate to="/home" replace /> : <Outlet />;
+  // If the token exists, redirect to the home page
+  if (token) {
+    return <Navigate to="/home" />;
+  }
+
+  // If no token exists, render the public content (login/signup)
+  return <Outlet />;
 };
 
 export default PublicRoute;

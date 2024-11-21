@@ -3,163 +3,153 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendMail } = require("../utilities/mailSend");
 
+
+
+// Generate JWT with 1-minute expiration
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "1m", // Token expires in 1 minute
+  });
+};
+// Set cookie to store the token
+const setTokenCookie = (res, token) => {
+  res.cookie("TOKEN", token, {
+    expires: new Date(Date.now() + 60 * 1000), // Cookie expires in 1 minute
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Secure in production
+    sameSite: "strict",
+  });
+};
+
 // Signup user
 module.exports.userSignUp = async (req, res) => {
-  let { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password } = req.body;
+
   try {
     if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({
-        message: "Please fill all the fields",
-      });
+      return res.status(400).json({ message: "Please fill all the fields." });
     }
-    const userRegistered = await userModel.findOne({ email: email });
-    if (userRegistered?.activated == false) {
-      await userModel.deleteOne({ email: email });
-    } else if (userRegistered) {
-      return res.status(400).json({
-        message: "User already registered",
-      });
+
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser?.activated === false) {
+      await userModel.deleteOne({ email });
+    } else if (existingUser) {
+      return res.status(400).json({ message: "User already registered." });
     }
+
     const name = `${firstName} ${lastName}`;
     const hashedPassword = await bcrypt.hash(password, 10);
-    let data = await userModel.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
+
+    const user = await userModel.create({ name, email, password: hashedPassword });
+
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
-    const timeToExpire = process.env.EXPIRE_OTP * 60 * 1000;
-    const expires = Date.now() + timeToExpire;
-    const emailData = {
-      otp,
-      name,
-      email,
-    };
-    await sendMail("otp", emailData);
-    const forHash = `${email}.${otp}.${expires}`;
-    const hash = await bcrypt.hash(forHash, 10);
+    const expires = Date.now() + process.env.EXPIRE_OTP * 60 * 1000;
+
+    // Send OTP via email
+    await sendMail("otp", { otp, name, email });
+
+    const hash = await bcrypt.hash(`${email}.${otp}.${expires}`, 10);
     const fullHash = `${hash}.${expires}`;
+
     return res.status(200).json({
-      message: "Please verify your email id with sent OTP",
+      message: "Please verify your email with the sent OTP.",
       email,
       fullHash,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: "Internal server error",
-    });
+    console.error("Error in userSignUp:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
-// Verify user with the sent OTP
+// Verify user with OTP
 module.exports.verifyUser = async (req, res) => {
   const { email, fullHash, otp } = req.body;
+
   try {
     if (!email || !fullHash || !otp) {
-      return res.status(400).json({
-        message: "Please fill all the fields",
-      });
+      return res.status(400).json({ message: "Please fill all the fields." });
     }
-    let index = fullHash.lastIndexOf(".");
-    let hash = fullHash.slice(0, index);
-    let expires = fullHash.slice(index + 1);
-    const isExpired = expires < Date.now();
-    if (isExpired) {
-      return res.status(400).json({
-        message: "OTP expired. Please try again.",
-      });
+
+    const [hash, expires] = fullHash.split(".");
+    if (Date.now() > +expires) {
+      return res.status(400).json({ message: "OTP expired. Please try again." });
     }
-    const data = `${email}.${otp}.${expires}`;
-    const isValid = await bcrypt.compare(data, hash);
+
+    const isValid = await bcrypt.compare(`${email}.${otp}.${expires}`, hash);
     if (!isValid) {
-      return res.status(400).json({
-        message: "OTP is not valid.",
-      });
+      return res.status(400).json({ message: "Invalid OTP." });
     }
-    const userRegistered = await userModel.findOne({ email: email });
-    if (!userRegistered) {
-      return res.status(400).json({
-        message: "User not found.",
-      });
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
     }
-    await userModel.updateOne(
-      { email: userRegistered.email },
-      { $set: { activated: true } }
-    );
-    const token = jwt.sign({ id: userRegistered._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRE || '1h',
-    });
-    res.cookie("TOKEN", token, {
-      expires: new Date(
-        Date.now() + process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000
-      ),
-      httpOnly: true,
-      sameSite: "strict",
-    });
-    userRegistered.password = "__HIDDEN__";
+
+    user.activated = true;
+    await user.save();
+
+    const token = generateToken(user._id);
+    setTokenCookie(res, token);
+
     return res.status(200).json({
-      message: "User verified successfully",
-      data: userRegistered,
+      message: "User verified successfully.",
+      user: { id: user._id, name: user.name, email: user.email },
     });
   } catch (error) {
-    return res.status(500).json({
-      message: "Internal server error",
-    });
+    console.error("Error in verifyUser:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 
 // Sign in user
 module.exports.userSignIn = async (req, res) => {
-  let { email, password } = req.body;
+  const { email, password } = req.body;
+
   try {
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Please fill all the fields",
-      });
+      return res.status(400).json({ message: "Please fill all the fields." });
     }
-    const user = await userModel.findOne({ email: email });
-    if (user.activated === false) {
-      return res.status(400).json({
-        message: "Please verify your email id.",
-      });
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
     }
-    if (await bcrypt.compare(password, user.password)) {
-      const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE || '1h',
-      });
-      res.cookie("TOKEN", token, {
-        expires: new Date(
-          Date.now() + process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000
-        ),
-        httpOnly: true,
-      });
-      user.password = "__HIDDEN__";
-      return res.status(200).json({
-        message: "User signed in successfully",
-        user,
-      });
-    } else {
-      return res.status(400).json({
-        message: "Wrong credentials.",
-      });
+
+    if (!user.activated) {
+      return res.status(403).json({ message: "Please verify your email." });
     }
-  } catch (err) {
-    return res.status(500).json({
-      message: "Internal server error.",
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Wrong credentials." });
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+    setTokenCookie(res, token);  // Set token in cookies (optional)
+    
+    // Send token in response body
+    return res.status(200).json({
+      message: "User signed in successfully.",
+      user: { id: user._id, name: user.name, email: user.email },
+      token: token  // Send token to frontend
     });
+  } catch (error) {
+    console.error("Error in userSignIn:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
+
 
 // Logout user
 module.exports.userLogout = async (req, res) => {
   try {
-    res.clearCookie("TOKEN");
-    return res.status(200).json({
-      message: "User logged out successfully.",
-    });
-  } catch (err) {
-    return res.status(500).json({
-      message: "Internal server error.",
-    });
+    res.clearCookie("TOKEN", { httpOnly: true, sameSite: "strict" });
+    return res.status(200).json({ message: "User logged out successfully." });
+  } catch (error) {
+    console.error("Error in userLogout:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
