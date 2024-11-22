@@ -97,7 +97,7 @@ const UploadLabPage = () => {
             <Header />
             <div className="container mx-auto p-6 bg-white rounded-lg shadow-md mt-8 flex flex-col items-center">
                 <h1 className="text-3xl font-bold text-center mb-6 text-red-600 pt-4 pb-2">Upload Your Lab Structure</h1>
-                <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md">
+                <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-xl">
                     <div>
                         <label htmlFor="labName" className="block text-gray-700">Lab Name:</label>
                         <input
@@ -150,7 +150,7 @@ const UploadLabPage = () => {
                             ))}
                         </div>
                     </div>
-                    <button type="submit" className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200 w-full" disabled={isLoading}>
+                    <button type="submit" className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200 w-full sm:w-auto" disabled={isLoading}>
                         {isLoading ? 'Uploading...' : 'Upload Lab'}
                     </button>
                 </form>

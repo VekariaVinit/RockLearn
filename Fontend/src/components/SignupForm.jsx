@@ -73,8 +73,9 @@ const SignupForm = () => {
       };
       
     return (
-        <div className="flex flex-col items-center justify-center bg-white rounded-xl border-2 border-red-500 p-8 w-96">
-            <h1 className="text-5xl font-bold">
+        <div className="flex flex-col items-center justify-center bg-white rounded-xl border-2 border-red-500 p-8 w-full sm:w-96">
+            {/* Responsive Logo Font Size */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">
                 <span className="text-red-500">Rock</span>
                 <span className="text-black">Learn</span>
             </h1>

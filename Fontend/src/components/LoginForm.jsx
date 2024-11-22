@@ -1,4 +1,3 @@
-// LoginForm.jsx
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -20,8 +19,8 @@ const LoginForm = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center bg-white rounded-xl border-2 border-red-500 p-8 w-96">
-            <h1 className="text-5xl font-bold">
+        <div className="flex flex-col items-center justify-center bg-white rounded-xl border-2 border-red-500 p-8 sm:w-96 w-full">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">
                 <span className="text-red-500">Rock</span>
                 <span className="text-black">Learn</span>
             </h1>

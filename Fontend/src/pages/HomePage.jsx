@@ -7,11 +7,10 @@ import { useAuth } from '../context/AuthContext';
 
 const HomePage = () => {
     const [repoDetails, setRepoDetails] = useState([]);
-    // const [userId, setUserId] = useState(null); // State to store user ID
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const { isAuthenticated, user } = useAuth(); // Authentication state
+    const { isAuthenticated, user } = useAuth();
     const getToken = () => {
         return localStorage.getItem('TOKEN');
     };
@@ -29,7 +28,7 @@ const HomePage = () => {
             const data = await response.json();
 
             if (data && Array.isArray(data.metadata)) {
-                setRepoDetails(data.metadata); // No need to calculate liked status here
+                setRepoDetails(data.metadata);
             } else {
                 setError('Invalid data format from server');
             }
@@ -41,8 +40,6 @@ const HomePage = () => {
         }
     };
 
-
-    // Mark a repository as visited
     const markRepoVisited = async (repoId) => {
         try {
             const token = getToken();
@@ -59,26 +56,23 @@ const HomePage = () => {
     };
 
     const handleLike = async (repoId) => {
-        if (!user.id) {
+        if (!user?.id) {
             console.error('User ID is not available');
             return;
         }
-    
-        // Optimistic update: toggle likedByUser and adjust totalLikes
+
         setRepoDetails((prevDetails) =>
-            prevDetails.map((repo) => {
-                if (repo._id === repoId) {
-                    const likedByUser = !repo.likedByUser; // Toggle liked state
-                    return {
-                        ...repo,
-                        likedByUser,
-                        totalLikes: likedByUser ? repo.totalLikes + 1 : repo.totalLikes - 1,
-                    };
-                }
-                return repo;
-            })
+            prevDetails.map((repo) =>
+                repo._id === repoId
+                    ? {
+                          ...repo,
+                          likedByUser: !repo.likedByUser,
+                          totalLikes: repo.likedByUser ? repo.totalLikes - 1 : repo.totalLikes + 1,
+                      }
+                    : repo
+            )
         );
-    
+
         try {
             const token = getToken();
             const response = await fetch(`http://localhost:3001/home/${repoId}/like`, {
@@ -88,47 +82,17 @@ const HomePage = () => {
                     'Content-Type': 'application/json',
                 },
             });
-    
+
             const data = await response.json();
-    
             if (!data.success) {
-                // Revert optimistic update if server call fails
-                setRepoDetails((prevDetails) =>
-                    prevDetails.map((repo) => {
-                        if (repo._id === repoId) {
-                            const likedByUser = !repo.likedByUser; // Revert liked state
-                            return {
-                                ...repo,
-                                likedByUser,
-                                totalLikes: likedByUser ? repo.totalLikes - 1 : repo.totalLikes + 1,
-                            };
-                        }
-                        return repo;
-                    })
-                );
+                fetchAllRepos(); // Revert on server error
             }
         } catch (error) {
             console.error('Error liking/unliking repository:', error);
-    
-            // Revert optimistic update in case of an error
-            setRepoDetails((prevDetails) =>
-                prevDetails.map((repo) => {
-                    if (repo._id === repoId) {
-                        const likedByUser = !repo.likedByUser; // Revert liked state
-                        return {
-                            ...repo,
-                            likedByUser,
-                            totalLikes: likedByUser ? repo.totalLikes - 1 : repo.totalLikes + 1,
-                        };
-                    }
-                    return repo;
-                })
-            );
+            fetchAllRepos(); // Revert on error
         }
     };
-    
 
-    // Fetch data based on search query
     const fetchData = async (query) => {
         if (query.trim() === '') {
             fetchAllRepos();
@@ -147,10 +111,9 @@ const HomePage = () => {
             const data = await response.json();
 
             if (data && Array.isArray(data)) {
-                const validRepos = data.filter(repo => repo && repo._id); // Ensure valid repositories
-                setRepoDetails(validRepos);
+                setRepoDetails(data.filter((repo) => repo && repo._id));
             } else {
-                setRepoDetails([]); // No matching repos, so show an empty list
+                setRepoDetails([]);
             }
         } catch (error) {
             setError('Error fetching repositories');
@@ -169,90 +132,81 @@ const HomePage = () => {
     }, [searchQuery]);
 
     const getInitials = (repoName) => {
-        if (typeof repoName !== 'string' || repoName.trim() === '') {
-            return '';
-        }
-
-        const words = repoName.split(' ');
+        if (!repoName || typeof repoName !== 'string') return '';
+        const words = repoName.trim().split(' ');
         return words.length > 1
             ? words[0][0].toUpperCase() + words[1][0].toUpperCase()
             : repoName[0].toUpperCase();
     };
 
     return (
-        <div className="min-h-screen text-white">
+        <div className="min-h-screen bg-gray-100 text-gray-900">
             <Header />
-            <div className="content-area w-5/6 p-6 mx-auto">
-                <h1 className="text-5xl font-bold mb-8 text-center text-red-500">Repositories</h1>
+            <div className="content-area w-11/12 md:w-4/5 p-6 mx-auto">
+                <h1 className="text-4xl md:text-5xl font-bold mb-8 text-center text-red-500">
+                    Repositories
+                </h1>
 
-                <div className="mb-4 flex justify-center relative">
+                <div className="mb-6 flex justify-center">
                     <input
                         type="text"
                         placeholder="Search repositories..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border p-3 rounded-lg shadow-lg w-1/2 text-black focus:outline-none focus:ring-2 focus:ring-red-500"
-                        aria-label="Search repositories"
+                        className="border p-3 rounded-lg shadow-md w-full md:w-2/3 lg:w-1/2 focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                 </div>
 
                 {error && <div className="text-red-500 text-center mb-4">{error}</div>}
-                {loading && <div className="text-center">Loading...</div>}
-                <div className="repo-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
-                    {repoDetails.map((repo) => {
-                        if (!repo || !repo._id) {
-                            console.warn('Invalid repository data:', repo);
-                            return null;
-                        }
+                {loading && <div className="text-center text-lg">Loading...</div>}
 
-                        return (
-                            <div
-                                key={repo._id}
-                                className="repo-card p-6 bg-gray-50 text-white rounded-lg shadow-lg hover:shadow-2xl transform transition-transform hover:scale-105"
+                <div className="repo-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    {repoDetails.map((repo) => (
+                        <div
+                            key={repo._id}
+                            className="repo-card p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transform transition-transform hover:scale-105"
+                        >
+                            <Link
+                                to={`/lab/${repo.title}`}
+                                onClick={() => markRepoVisited(repo._id)}
+                                className="block text-center"
                             >
-                                <Link
-                                    to={`/lab/${repo.title}`}
-                                    className="block text-center"
-                                    onClick={() => markRepoVisited(repo._id)}
-                                >
-                                    <div className="w-32 h-32 mb-4 mx-auto flex justify-center items-center rounded-full bg-red-500 text-white text-3xl font-bold">
-                                        {getInitials(repo.title)}
-                                    </div>
-                                    <h3 className="text-xl font-semibold text-black">{repo.title}</h3>
-                                    {Array.isArray(repo.tags) && repo.tags.length > 0 ? (
-                                        <div className="text-sm text-gray-600 mt-1">Tags: {repo.tags.join(', ')}</div>
-                                    ) : (
-                                        <div className="text-sm text-gray-600 mt-1">No tags available</div>
-                                    )}
-                                </Link>
-                                <div className="mt-4 flex justify-between items-center">
-                                    <button
-                                        className={`text-xl ${repo.likedByUser ? 'text-red-400' : 'text-gray-500'}`}
-                                        onClick={() => handleLike(repo._id)}
-                                    >
-                                        <FaHeart />
-                                        <span className="ml-2">{repo.totalLikes}</span>
-                                    </button>
-
-                                    <a
-                                        href={`${repo.url}/archive/refs/heads/main.zip`}
-                                        className="text-black hover:text-red-500"
-                                        download
-                                    >
-                                        <FaDownload className="w-6 h-6" />
-                                    </a>
-                                    <a
-                                        href={repo.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-black hover:text-red-500"
-                                    >
-                                        <FaGithub className="w-6 h-6" />
-                                    </a>
+                                <div className="w-20 h-20 md:w-24 md:h-24 mb-4 mx-auto flex justify-center items-center rounded-full bg-red-500 text-white text-2xl font-bold">
+                                    {getInitials(repo.title)}
                                 </div>
+                                <h3 className="text-lg md:text-xl font-semibold text-gray-900">{repo.title}</h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {repo.tags?.length ? `Tags: ${repo.tags.join(', ')}` : 'No tags available'}
+                                </p>
+                            </Link>
+                            <div className="mt-4 flex justify-between items-center">
+                                <button
+                                    className={`flex items-center text-sm ${
+                                        repo.likedByUser ? 'text-red-500' : 'text-gray-500'
+                                    }`}
+                                    onClick={() => handleLike(repo._id)}
+                                >
+                                    <FaHeart className="mr-2" />
+                                    {repo.totalLikes}
+                                </button>
+                                <a
+                                    href={`${repo.url}/archive/refs/heads/main.zip`}
+                                    className="text-gray-500 hover:text-red-500"
+                                    download
+                                >
+                                    <FaDownload className="w-5 h-5" />
+                                </a>
+                                <a
+                                    href={repo.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-gray-500 hover:text-red-500"
+                                >
+                                    <FaGithub className="w-5 h-5" />
+                                </a>
                             </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

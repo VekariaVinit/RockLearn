@@ -68,12 +68,12 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen ">
+        <div className="min-h-screen bg-gray-100">
             <Header />
-            <div className="max-w-4xl mx-auto p-6 text-white">
+            <div className="max-w-4xl mx-auto p-4 sm:p-6">
                 {/* Profile Info */}
-                <div className="bg-white text-gray-800 p-8 rounded-lg shadow-lg">
-                    <h1 className="text-4xl font-bold mb-4">{user.name}'s Profile</h1>
+                <div className="bg-white text-gray-800 p-6 sm:p-8 rounded-lg shadow-lg">
+                    <h1 className="text-2xl sm:text-4xl font-bold mb-4">{user.name}'s Profile</h1>
                     <p className="text-lg">
                         <strong>Email:</strong> {user.email}
                     </p>
@@ -81,22 +81,24 @@ const Profile = () => {
 
                 {/* Liked Labs Section */}
                 <div className="mt-8">
-                    <h2 className="text-3xl font-semibold mb-4 border-b-2 text-black border-white pb-2">Liked Labs</h2>
+                    <h2 className="text-xl sm:text-3xl font-semibold mb-4 border-b-2 text-black border-white pb-2">
+                        Liked Labs
+                    </h2>
                     {user.likedLabs.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                             {user.likedLabs.map((lab) => (
                                 <div
                                     key={lab._id}
                                     className="bg-white p-4 rounded-lg shadow-md text-gray-800 hover:scale-105 transform transition-all duration-300"
                                 >
-                                    <h3 className="text-xl font-bold mb-2">{lab.title}</h3>
-                                    <p className="text-gray-600 mb-2">{lab.description}</p>
-                                    <small className="text-gray-500 block mb-2">
+                                    <h3 className="text-lg sm:text-xl font-bold mb-2">{lab.title}</h3>
+                                    <p className="text-sm sm:text-base text-gray-600 mb-2">{lab.description}</p>
+                                    <small className="text-xs sm:text-sm text-gray-500 block mb-2">
                                         Likes: {lab.totalLikes} | Visits: {lab.totalVisits}
                                     </small>
                                     <button
                                         onClick={() => handleLabClick(lab._id, lab.title)}
-                                        className="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+                                        className="inline-block bg-blue-500 text-white px-3 sm:px-4 py-1 sm:py-2 rounded-lg hover:bg-blue-600 transition"
                                     >
                                         View Lab
                                     </button>
@@ -104,28 +106,30 @@ const Profile = () => {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-lg text-gray-200">You haven't liked any labs yet.</p>
+                        <p className="text-base sm:text-lg text-gray-600">You haven't liked any labs yet.</p>
                     )}
                 </div>
 
                 {/* Visited Labs Section */}
                 <div className="mt-8">
-                    <h2 className="text-3xl font-semibold mb-4 border-b-2 text-black border-white pb-2">Visited Labs</h2>
+                    <h2 className="text-xl sm:text-3xl font-semibold mb-4 border-b-2 text-black border-white pb-2">
+                        Visited Labs
+                    </h2>
                     {user.visitedLabs.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                             {user.visitedLabs.map((lab) => (
                                 <div
                                     key={lab._id}
                                     className="bg-white p-4 rounded-lg shadow-md text-gray-800 hover:scale-105 transform transition-all duration-300"
                                 >
-                                    <h3 className="text-xl font-bold mb-2">{lab.title}</h3>
-                                    <p className="text-gray-600 mb-2">{lab.description}</p>
-                                    <small className="text-gray-500 block mb-2">
+                                    <h3 className="text-lg sm:text-xl font-bold mb-2">{lab.title}</h3>
+                                    <p className="text-sm sm:text-base text-gray-600 mb-2">{lab.description}</p>
+                                    <small className="text-xs sm:text-sm text-gray-500 block mb-2">
                                         Likes: {lab.totalLikes} | Visits: {lab.totalVisits}
                                     </small>
                                     <button
                                         onClick={() => handleLabClick(lab._id, lab.title)}
-                                        className="inline-block bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+                                        className="inline-block bg-green-500 text-white px-3 sm:px-4 py-1 sm:py-2 rounded-lg hover:bg-green-600 transition"
                                     >
                                         View Lab
                                     </button>
@@ -133,7 +137,7 @@ const Profile = () => {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-lg text-gray-200">You haven't visited any labs yet.</p>
+                        <p className="text-base sm:text-lg text-gray-600">You haven't visited any labs yet.</p>
                     )}
                 </div>
             </div>
