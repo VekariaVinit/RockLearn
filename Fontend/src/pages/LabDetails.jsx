@@ -118,11 +118,22 @@ const LabDetails = () => {
 
     const handleDownload = async () => {
         try {
-            const response = await fetch(`http://localhost:3001/download/${repoName}/${fileName}`);
+            const downloadUrl = directories[openDirectory]?.files?.find(
+                (file) => file.name === fileName
+            )?.download_url;
+
+            if (!downloadUrl) {
+                console.error('Download URL not found');
+                return;
+            }
+
+            // Fetch the file as a Blob and download it
+            const response = await fetch(downloadUrl);
             const blob = await response.blob();
+
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = fileName;
+            link.download = fileName; // Use the file name for the download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -186,45 +197,42 @@ const LabDetails = () => {
 
                 {/* Content Area */}
                 <div className="content-area bg-white p-4 flex-grow shadow-lg rounded-md overflow-auto relative">
-    {/* Header Section with Hamburger Menu */}
-    <div className="flex justify-between items-center">
-        {/* Hamburger Menu */}
-        <button
-            onClick={toggleSidebar}
-            className="md:hidden bg-blue-500 text-white rounded-full p-3"
-        >
-            <FontAwesomeIcon icon={faBars} />
-        </button>
+                    {/* Header Section with Hamburger Menu */}
+                    <div className="flex justify-between items-center">
+                        {/* Hamburger Menu */}
+                        <button
+                            onClick={toggleSidebar}
+                            className="md:hidden bg-blue-500 text-white rounded-full p-3"
+                        >
+                            <FontAwesomeIcon icon={faBars} />
+                        </button>
 
-        {/* Header Title */}
-        <h2 className="text-2xl font-semibold flex-grow text-center md:text-left">
-            File Content
-        </h2>
+                        {/* Header Title */}
+                        <h2 className="text-2xl font-semibold flex-grow text-center md:text-left">
+                            File Content
+                        </h2>
 
-        {/* Download Button */}
-        <button
-            onClick={handleDownload}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-        >
-            Download File
-        </button>
-    </div>
+                        {/* Download Button */}
+                        <button
+                            onClick={handleDownload}
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                        >
+                            Download File
+                        </button>
+                    </div>
 
-    {/* File Content */}
-    <div
-        id="file-content"
-        className="whitespace-pre-wrap border p-4 rounded-md bg-gray-50 mt-2"
-    >
-        {fileType === 'text' || fileType === 'md' ? (
-            <div dangerouslySetInnerHTML={{ __html: fileContent }} />
-        ) : (
-            <div dangerouslySetInnerHTML={{ __html: fileContent }} />
-        )}
-    </div>
-</div>
-
-
-
+                    {/* File Content */}
+                    <div
+                        id="file-content"
+                        className="whitespace-pre-wrap border p-4 rounded-md bg-gray-50 mt-2"
+                    >
+                        {fileType === 'text' || fileType === 'md' ? (
+                            <div dangerouslySetInnerHTML={{ __html: fileContent }} />
+                        ) : (
+                            <div dangerouslySetInnerHTML={{ __html: fileContent }} />
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );
