@@ -1,9 +1,8 @@
-// UploadLabPage.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Use useNavigate instead of useHistory
-import Header from '../components/Header'; // Import the Header component
-import { ToastContainer, toast } from 'react-toastify'; // Import toast and ToastContainer
-import 'react-toastify/dist/ReactToastify.css'; // Import toast styles
+import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Spinner = () => (
     <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50">
@@ -12,17 +11,18 @@ const Spinner = () => (
 );
 
 const UploadLabPage = () => {
-    const navigate = useNavigate(); // Initialize navigate for navigation
+    const navigate = useNavigate();
     const [labName, setLabName] = useState('');
     const [files, setFiles] = useState([]);
-    const [tags, setTags] = useState([]); // State for tags
-    const [tagInput, setTagInput] = useState(''); // Add state for tag input
-    const [isLoading, setIsLoading] = useState(false); // State for loading
+    const [tags, setTags] = useState([]);
+    const [tagInput, setTagInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const token = localStorage.getItem('TOKEN'); // Get the JWT token from localStorage
 
     const handleFileChange = (event) => {
         const selectedFiles = event.target.files;
         const filesWithPath = Array.from(selectedFiles).map(file => {
-            // You might need a way to capture relative paths, e.g., `file.webkitRelativePath`.
             const filePath = file.webkitRelativePath || file.name;
             return { file, filePath };
         });
@@ -33,9 +33,9 @@ const UploadLabPage = () => {
         if (event.key === 'Enter' && tagInput.trim() !== '') {
             event.preventDefault();
             setTags(prevTags => [...prevTags, tagInput.trim()]);
-            setTagInput(''); // Clear the tag input after adding
+            setTagInput('');
         }
-    }
+    };
 
     const removeTag = (indexToRemove) => {
         setTags(tags.filter((_, index) => index !== indexToRemove));
@@ -44,30 +44,26 @@ const UploadLabPage = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         setIsLoading(true);
-    
-        // Initialize FormData and append the fields
-        const formData = new FormData();
-        formData.append('labName', labName); // Add lab name
-        formData.append('tags', JSON.stringify(tags)); // Convert tags to JSON string
-    
-        // Add each file to formData, including its path if needed
-        files.forEach(({ file, filePath }) => {
-            formData.append('files', file);       // Append each file object
-            formData.append('filePaths[]', filePath);
-        });
-    
 
-        // Log to debug formData content
-        // formData.forEach((value, key) => {
-        //     console.log(`${key}: ${value}`);
-        // });
-        
+        const formData = new FormData();
+        formData.append('labName', labName);
+        formData.append('tags', JSON.stringify(tags));
+
+        files.forEach(({ file, filePath }) => {
+            formData.append('files', file);
+            formData.append('filePaths[]', filePath); 
+        });
+
         try {
+            // Add Authorization header with JWT token
             const response = await fetch('http://localhost:3001/upload/api/labs', {
                 method: 'POST',
-                body: formData, // Pass the FormData directly
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
             });
-    
+
             if (response.ok) {
                 toast.success('Lab uploaded successfully!');
                 setLabName('');
@@ -86,31 +82,22 @@ const UploadLabPage = () => {
             }, 2000);
         }
     };
-    
+
     const handleLabNameChange = (e) => {
-        // Get the value from the input
-        const value = e.target.value;
-    
-        // Check if the value contains any spaces
-        if (!value.includes(' ')) {
-          // If there are no spaces, update the state
-          setLabName(value);
+        const value = e.target.value.replace(/\s+/g, '');
+        if (/^[a-zA-Z0-9-_]*$/.test(value)) {
+            setLabName(value);
         } else {
-          // If there are spaces, remove them (or you could show a warning instead)
-          // Uncomment the next line to automatically remove spaces
-          // setLabName(value.replace(/\s+/g, ''));
-    
-          // You could also show a warning if needed:
-          alert("Lab name cannot contain spaces.");
+            alert("Lab name can only contain alphanumeric characters, hyphens, or underscores.");
         }
-      };
-      
+    };
+    
     return (
         <div className="bg-gray-100 min-h-screen">
             <Header />
             <div className="container mx-auto p-6 bg-white rounded-lg shadow-md mt-8 flex flex-col items-center">
                 <h1 className="text-3xl font-bold text-center mb-6 text-red-600 pt-4 pb-2">Upload Your Lab Structure</h1>
-                <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md">
+                <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-xl">
                     <div>
                         <label htmlFor="labName" className="block text-gray-700">Lab Name:</label>
                         <input
@@ -128,8 +115,9 @@ const UploadLabPage = () => {
                         <input
                             type="file"
                             id="files"
-                            webkitdirectory="true" // Fixed to string value
-                            mozdirectory="true" // Fixed to string value
+                            directory=""
+                            webkitdirectory=""
+                            mozdirectory=""
                             required
                             multiple
                             onChange={handleFileChange}
@@ -162,13 +150,13 @@ const UploadLabPage = () => {
                             ))}
                         </div>
                     </div>
-                    <button type="submit" className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200 w-full" disabled={isLoading}>
+                    <button type="submit" className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200 w-full sm:w-auto" disabled={isLoading}>
                         {isLoading ? 'Uploading...' : 'Upload Lab'}
                     </button>
                 </form>
             </div>
-            {isLoading && <Spinner />} {/* Show loader when uploading */}
-            <ToastContainer /> {/* Include ToastContainer here */}
+            {isLoading && <Spinner />}
+            <ToastContainer />
         </div>
     );
 };

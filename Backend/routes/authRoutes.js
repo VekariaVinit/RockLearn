@@ -23,10 +23,11 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
+const { protect } = require('../middlewares/authMiddleware');
 
-router.post("/signup", authController.userSignUp);
+router.post("/signup",authController.userSignUp);
 router.post("/verify", authController.verifyUser);
 router.post("/login", authController.userSignIn);
-router.post("/logout", authController.userLogout);
+router.post("/logout",protect, authController.userLogout);
 
 module.exports = router;

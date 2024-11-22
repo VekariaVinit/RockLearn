@@ -2,25 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import './home.css';
-import { FaGithub, FaDownload } from 'react-icons/fa'; // Import icons from react-icons
+import { FaGithub, FaHeart, FaDownload } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const HomePage = () => {
-    const [repoNames, setRepoNames] = useState([]);
     const [repoDetails, setRepoDetails] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [suggestions, setSuggestions] = useState([]);
+    const { isAuthenticated, user } = useAuth();
+    const getToken = () => {
+        return localStorage.getItem('TOKEN');
+    };
 
     const fetchAllRepos = async () => {
         setLoading(true);
         setError('');
         try {
-            const response = await fetch('http://localhost:3001/home');
+            const token = getToken();
+            const response = await fetch('http://localhost:3001/home', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
             const data = await response.json();
 
-            if (data && Array.isArray(data.repoNames) && Array.isArray(data.metadata)) {
-                setRepoNames(data.repoNames);
+            if (data && Array.isArray(data.metadata)) {
                 setRepoDetails(data.metadata);
             } else {
                 setError('Invalid data format from server');
@@ -33,6 +40,59 @@ const HomePage = () => {
         }
     };
 
+    const markRepoVisited = async (repoId) => {
+        try {
+            const token = getToken();
+            await fetch(`http://localhost:3001/home/${repoId}/visit`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+        } catch (error) {
+            console.error('Error marking repository as visited:', error);
+        }
+    };
+
+    const handleLike = async (repoId) => {
+        if (!user?.id) {
+            console.error('User ID is not available');
+            return;
+        }
+
+        setRepoDetails((prevDetails) =>
+            prevDetails.map((repo) =>
+                repo._id === repoId
+                    ? {
+                          ...repo,
+                          likedByUser: !repo.likedByUser,
+                          totalLikes: repo.likedByUser ? repo.totalLikes - 1 : repo.totalLikes + 1,
+                      }
+                    : repo
+            )
+        );
+
+        try {
+            const token = getToken();
+            const response = await fetch(`http://localhost:3001/home/${repoId}/like`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                fetchAllRepos(); // Revert on server error
+            }
+        } catch (error) {
+            console.error('Error liking/unliking repository:', error);
+            fetchAllRepos(); // Revert on error
+        }
+    };
+
     const fetchData = async (query) => {
         if (query.trim() === '') {
             fetchAllRepos();
@@ -42,15 +102,18 @@ const HomePage = () => {
         setLoading(true);
         setError('');
         try {
-            const response = await fetch(`http://localhost:3001/api/metadata/search?q=${query}`);
+            const token = getToken();
+            const response = await fetch(`http://localhost:3001/api/metadata/search?q=${query}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
             const data = await response.json();
 
             if (data && Array.isArray(data)) {
-                setRepoNames(data.map(item => item.title || ''));
-                setSuggestions(data);
+                setRepoDetails(data.filter((repo) => repo && repo._id));
             } else {
-                setRepoNames([]);
-                setSuggestions([]);
+                setRepoDetails([]);
             }
         } catch (error) {
             setError('Error fetching repositories');
@@ -69,106 +132,81 @@ const HomePage = () => {
     }, [searchQuery]);
 
     const getInitials = (repoName) => {
-        if (typeof repoName !== 'string' || repoName.trim() === '') {
-            return '';
-        }
-
-        const words = repoName.split(' ');
+        if (!repoName || typeof repoName !== 'string') return '';
+        const words = repoName.trim().split(' ');
         return words.length > 1
             ? words[0][0].toUpperCase() + words[1][0].toUpperCase()
             : repoName[0].toUpperCase();
     };
 
     return (
-        <div className="min-h-screen text-white">
+        <div className="min-h-screen bg-gray-100 text-gray-900">
             <Header />
-            <div className="content-area w-5/6 p-6 mx-auto">
-                <h1 className="text-5xl font-bold mb-8 text-center text-red-500">Repositories</h1>
+            <div className="content-area w-11/12 md:w-4/5 p-6 mx-auto">
+                <h1 className="text-4xl md:text-5xl font-bold mb-8 text-center text-red-500">
+                    Repositories
+                </h1>
 
-                {/* Search Box UI */}
-                <div className="mb-4 flex justify-center relative">
-    <input
-        type="text"
-        placeholder="Search repositories..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="border p-3 rounded-lg shadow-lg w-1/2 text-black focus:outline-none focus:ring-2 focus:ring-red-500"
-        aria-label="Search repositories"
-    />
-    {searchQuery && suggestions.length > 0 && (
-        <div className="absolute top-12 w-1/2 bg-white shadow-lg max-h-60 overflow-auto z-10 border border-gray-300 rounded-lg">
-            {suggestions.map((suggestion, index) => (
-                <div
-                    key={index}
-                    className="p-3 cursor-pointer hover:bg-gray-200"
-                    onClick={() => {
-                        setSearchQuery(suggestion.title || suggestion.tags.join(', ') || '');
-                        setSuggestions([]);  // Clear suggestions on selection
-                    }}
-                >
-                    <Link to={`/lab/${suggestion.title}`} className="block text-red-500 hover:text-red-600">
-                        {/* Display title */}
-                        <div>{suggestion.title || 'No title'}</div>
-
-                        {/* Display tags if they exist */}
-                        {suggestion.tags && suggestion.tags.length > 0 && (
-                            <div className="text-sm text-gray-600 mt-1">
-                                Tags: {suggestion.tags.join(', ')}
-                            </div>
-                        )}
-                    </Link>
+                <div className="mb-6 flex justify-center">
+                    <input
+                        type="text"
+                        placeholder="Search repositories..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border p-3 rounded-lg shadow-md w-full md:w-2/3 lg:w-1/2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
                 </div>
-            ))}
-        </div>
-    )}
-</div>
 
                 {error && <div className="text-red-500 text-center mb-4">{error}</div>}
-                {loading && <div className="text-center">Loading...</div>}
-                {repoNames.length === 0 && !loading && searchQuery.trim() !== '' && (
-                    <div className="text-center text-red-500">No repositories found</div>
-                )}
+                {loading && <div className="text-center text-lg">Loading...</div>}
 
-                {/* Repositories List */}
-                <div className="repo-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
-                    {repoNames.length === 0 && !loading && searchQuery.trim() === '' ? (
-                        <div className="text-center">No repositories available</div>
-                    ) : (
-                        repoNames.map((repoName, index) => (
-                            <div
-                                key={repoName || index}
-                                className="repo-card p-6 bg-gray-50 text-white rounded-lg shadow-lg hover:shadow-2xl transform transition-transform hover:scale-105"
+                <div className="repo-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    {repoDetails.map((repo) => (
+                        <div
+                            key={repo._id}
+                            className="repo-card p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transform transition-transform hover:scale-105"
+                        >
+                            <Link
+                                to={`/lab/${repo.title}`}
+                                onClick={() => markRepoVisited(repo._id)}
+                                className="block text-center"
                             >
-                                <Link to={`/lab/${repoName}`} className="block text-center">
-                                    <div className="w-32 h-32 mb-4 mx-auto flex justify-center items-center rounded-full bg-red-500 text-white text-3xl font-bold">
-                                        {getInitials(repoName)}
-                                    </div>
-                                    <h3 className="text-xl font-semibold text-black">{repoName}</h3>
-                                </Link>
-
-                                {/* Action Buttons */}
-                                <div className="mt-4 flex justify-center space-x-6">
-                                    <a
-                                        href={`https://github.com/RockLearn/${repoName}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-black hover:text-red-500 relative group"
-                                    >
-                                        <FaGithub className="w-6 h-6" />
-                                        <span className="tooltip absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 text-xs p-2 bg-black text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">View on GitHub</span>
-                                    </a>
-                                    <a
-                                        href={`https://github.com/RockLearn/${repoName}/archive/refs/heads/main.zip`}
-                                        className="text-black hover:text-red-500 relative group"
-                                        download
-                                    >
-                                        <FaDownload className="w-6 h-6" />
-                                        <span className="tooltip absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 text-xs p-2 bg-black text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">Download ZIP</span>
-                                    </a>
+                                <div className="w-20 h-20 md:w-24 md:h-24 mb-4 mx-auto flex justify-center items-center rounded-full bg-red-500 text-white text-2xl font-bold">
+                                    {getInitials(repo.title)}
                                 </div>
+                                <h3 className="text-lg md:text-xl font-semibold text-gray-900">{repo.title}</h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {repo.tags?.length ? `Tags: ${repo.tags.join(', ')}` : 'No tags available'}
+                                </p>
+                            </Link>
+                            <div className="mt-4 flex justify-between items-center">
+                                <button
+                                    className={`flex items-center text-sm ${
+                                        repo.likedByUser ? 'text-red-500' : 'text-gray-500'
+                                    }`}
+                                    onClick={() => handleLike(repo._id)}
+                                >
+                                    <FaHeart className="mr-2" />
+                                    {repo.totalLikes}
+                                </button>
+                                <a
+                                    href={`${repo.url}/archive/refs/heads/main.zip`}
+                                    className="text-gray-500 hover:text-red-500"
+                                    download
+                                >
+                                    <FaDownload className="w-5 h-5" />
+                                </a>
+                                <a
+                                    href={repo.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-gray-500 hover:text-red-500"
+                                >
+                                    <FaGithub className="w-5 h-5" />
+                                </a>
                             </div>
-                        ))
-                    )}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
