@@ -152,9 +152,11 @@ const LabDetails = () => {
             <div className="flex-grow relative flex pt-2 md:pt-0">
                 {/* Sidebar */}
                 <div
-                    className={`sidebar bg-white border-r p-4 shadow-lg w-64 h-full overflow-y-auto fixed md:relative z-10 transition-transform duration-300 transform ${sidebarVisible ? 'translate-x-0' : '-translate-x-full'
-                        } md:translate-x-0`}
-                >
+    className={`sidebar bg-white border-r p-4 shadow-lg w-64 min-w-[16rem] max-w-[16rem] h-full overflow-y-auto fixed md:relative z-[1] transition-transform duration-300 transform ${sidebarVisible ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0`}
+>
+
+
                     <button
                         onClick={toggleSidebar}
                         className="text-lg text-gray-500 md:hidden absolute top-4 right-4"
@@ -162,35 +164,32 @@ const LabDetails = () => {
                         <FontAwesomeIcon icon={faTimes} />
                     </button>
                     <h2 className="text-2xl font-semibold mb-4">Directories</h2>
+
                     {Object.keys(directories).map((dir) => (
                         <div key={dir} className="mb-4">
                             <h3
-                                className="text-xl font-bold cursor-pointer flex justify-between items-center"
+                                className="text-lg font-medium cursor-pointer flex justify-between items-center py-2 px-3 rounded bg-gray-100 hover:bg-gray-200"
                                 onClick={() => toggleDirectory(dir)}
                             >
                                 {dir === '' ? 'Root Directory' : dir}
                                 <FontAwesomeIcon
                                     icon={faChevronDown}
-                                    className={`transition-transform duration-300 ${openDirectory === dir ? 'rotate-180' : ''
-                                        }`}
+                                    className={`transition-transform duration-300 ${openDirectory === dir ? 'rotate-180' : ''}`}
                                 />
                             </h3>
-                            <div
-                                className={`transition-all duration-300 overflow-hidden ${openDirectory === dir ? 'max-h-screen' : 'max-h-0'
-                                    }`}
-                            >
-                                <ul className="list-disc pl-4">
+                            {openDirectory === dir && (
+                                <ul className="list-none mt-2 pl-4 border-l-2 border-gray-300">
                                     {directories[dir].files.map((file) => (
                                         <li
                                             key={file.path}
-                                            className="cursor-pointer text-blue-500 hover:underline"
+                                            className="cursor-pointer text-blue-600 hover:text-blue-800 py-1"
                                             onClick={() => fetchFileContent(file.path, file.download_url)}
                                         >
                                             {file.name}
                                         </li>
                                     ))}
                                 </ul>
-                            </div>
+                            )}
                         </div>
                     ))}
                 </div>
