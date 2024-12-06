@@ -164,12 +164,12 @@ const HomePage = () => {
         <div className="min-h-screen bg-gray-100 text-gray-900">
             <Header />
             <div className="content-area w-11/12 md:w-4/5 p-6 mx-auto">
-                <h1 className="text-4xl md:text-5xl font-bold mb-8 text-center text-red-500">Repositories</h1>
+                <h1 className="text-4xl md:text-5xl font-bold mb-8 text-center text-red-500">Labs</h1>
 
                 <div className="mb-6 flex justify-center">
                     <input
                         type="text"
-                        placeholder="Search repositories..."
+                        placeholder="Search labs..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="border p-3 rounded-lg shadow-md w-full md:w-2/3 lg:w-1/2 focus:outline-none focus:ring-2 focus:ring-red-500"
